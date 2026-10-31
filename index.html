@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mérida — Asistente personal</title>
+<meta name="theme-color" content="#0a0e1a">
+<meta name="description" content="Mérida: asistente conversacional offline, multilingüe y propio.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%A0%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0e1a;--panel:#131824;--panel2:#1a2030;--panel3:#232a3d;
+  --text:#e6e9f2;--muted:#8a93a8;--accent:#6ea8fe;--accent2:#a78bfa;
+  --user:#2a4d8f;--ai:#1a2138;--border:#2a3355;--danger:#e05a5a;--success:#4ade80;
+  --warning:#fbbf24;--radius:12px;--shadow:0 10px 40px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,sans-serif;
+  background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--panel3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#3a4560}
+
+/* ---------- LAYOUT ---------- */
+#app{display:flex;height:100vh;height:100dvh;overflow:hidden}
+
+/* ---------- SIDEBAR ---------- */
+#sidebar{
+  width:290px;background:var(--panel);display:flex;flex-direction:column;
+  border-right:1px solid var(--border);transition:transform .28s ease;
+  flex-shrink:0;
+}
+#sidebarHeader{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:10px;
+}
+#brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem}
+#brand .dot{width:10px;height:10px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
+#brand .dot.off{background:var(--danger);box-shadow:0 0 8px var(--danger)}
+#newChat{
+  background:var(--accent);color:var(--bg);padding:9px 12px;border-radius:10px;
+  font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:background .15s;
+}
+#newChat:hover{background:#8fbcff}
+#searchBox{
+  background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;font-size:.85rem;color:var(--text);width:100%;
+}
+#searchBox:focus{outline:none;border-color:var(--accent)}
+#chatList{
+  flex:1;overflow-y:auto;list-style:none;padding:8px;scrollbar-width:thin;
+}
+#chatList .empty{color:var(--muted);font-size:.82rem;padding:20px 10px;text-align:center}
+#chatList li{
+  padding:10px 12px;border-radius:10px;cursor:pointer;margin-bottom:3px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.87rem;
+  transition:background .15s;
+}
+#chatList li:hover{background:var(--panel2)}
+#chatList li.active{background:var(--panel2);border-left:3px solid var(--accent);padding-left:9px}
+#chatList li .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#chatList li .meta{font-size:.68rem;color:var(--muted);margin-top:2px}
+#chatList li .actions{display:flex;gap:2px;opacity:0;transition:opacity .15s}
+#chatList li:hover .actions{opacity:1}
+#chatList li .actions button{
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  padding:3px 4px;font-size:.85rem;border-radius:4px;
+}
+#chatList li .actions button:hover{color:var(--danger);background:var(--panel3)}
+#sidebarFooter{
+  padding:10px 12px;border-top:1px solid var(--border);
+  display:flex;gap:6px;flex-wrap:wrap;
+}
+#sidebarFooter button{
+  flex:1;min-width:70px;background:var(--panel2);border:1px solid var(--border);
+  padding:8px 6px;border-radius:8px;font-size:.75rem;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  transition:background .15s;
+}
+#sidebarFooter button:hover{background:var(--panel3)}
+
+/* ---------- MAIN ---------- */
+#main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+#chatHeader{
+  padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;
+}
+#chatHeader h2{
+  font-size:.95rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;flex:1;
+}
+#chatHeader .headerActions{display:flex;gap:4px}
+#chatHeader button{
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:1rem;padding:6px 8px;border-radius:6px;transition:all .15s;
+}
+#chatHeader button:hover{color:var(--text);background:var(--panel2)}
+#menuBtn{display:none}
+#searchInChat{display:none;padding:8px 18px;background:var(--panel2);border-bottom:1px solid var(--border)}
+#searchInChat.show{display:block}
+#searchInChat input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:.85rem}
+
+/* ---------- MESSAGES ---------- */
+#messages{
+  flex:1;overflow-y:auto;padding:20px 18px;display:flex;flex-direction:column;gap:14px;
+  max-width:900px;margin:0 auto;width:100%;scroll-behavior:smooth;
+}
+.msg{display:flex;gap:10px;align-items:flex-start;animation:fadeIn .25s ease}
+.msg.user{justify-content:flex-end}
+.msg.ai .avatar{
+  width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.msg.user .avatar{
+  width:32px;height:32px;border-radius:50%;background:var(--panel3);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.msgContent{max-width:80%;min-width:0}
+.bubble{
+  padding:11px 15px;border-radius:16px;line-height:1.55;
+  white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;font-size:.93rem;
+  position:relative;
+}
+.msg.user .bubble{background:var(--user);border-top-right-radius:4px}
+.msg.ai .bubble{background:var(--ai);border-top-left-radius:4px}
+.bubble strong,.bubble b{font-size:1.16em;font-weight:700;display:inline-block;margin:4px 0;color:#fff}
+.bubble h2{font-size:1.28em;font-weight:700;margin:10px 0 6px;color:#fff}
+.bubble h3{font-size:1.14em;font-weight:700;margin:8px 0 4px;color:#fff}
+.bubble img{max-width:100%;border-radius:10px;margin-top:8px;display:block;border:1px solid var(--border)}
+.bubble a{color:var(--accent);text-decoration:underline}
+.bubble code{
+  background:#0a0e1a;padding:2px 6px;border-radius:4px;
+  font-family:ui-monospace,"SF Mono",Consolas,Menlo,monospace;
+  font-size:.88em;color:#a5d6ff;
+}
+.bubble pre{
+  background:#0a0e1a;padding:12px 14px;border-radius:8px;overflow-x:auto;
+  margin:8px 0;font-size:.82em;border:1px solid var(--border);position:relative;
+}
+.bubble pre code{background:none;padding:0;color:var(--text)}
+.bubble pre .copyCode{
+  position:absolute;top:6px;right:6px;background:var(--panel2);border:1px solid var(--border);
+  color:var(--muted);padding:2px 8px;border-radius:4px;font-size:.7em;cursor:pointer;
+}
+.bubble pre .copyCode:hover{color:var(--text)}
+.bubble ul,.bubble ol{padding-left:1.4em;margin:6px 0}
+.bubble li{margin:3px 0}
+.bubble blockquote{border-left:3px solid var(--accent);padding-left:10px;margin:8px 0;color:var(--muted)}
+.bubble table{border-collapse:collapse;margin:8px 0;font-size:.88em}
+.bubble td,.bubble th{border:1px solid var(--border);padding:5px 9px}
+.bubble th{background:var(--panel2)}
+.msgMeta{font-size:.7rem;color:var(--muted);margin-top:5px;display:flex;gap:8px;align-items:center}
+.msgMeta button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:1px 4px;border-radius:3px}
+.msgMeta button:hover{color:var(--text);background:var(--panel3)}
+.typing{display:inline-block}
+.typing::after{content:'';animation:dots 1.4s infinite steps(4)}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- INPUT ---------- */
+#inputArea{
+  padding:12px 18px 16px;background:var(--panel);border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+#inputRow{display:flex;gap:8px;align-items:flex-end;max-width:900px;margin:0 auto}
+#input{
+  flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:14px;
+  padding:11px 14px;font-size:.93rem;resize:none;min-height:44px;max-height:200px;
+  line-height:1.5;transition:border-color .15s;
+}
+#input:focus{outline:none;border-color:var(--accent)}
+#sendBtn{
+  background:var(--accent);color:var(--bg);border:none;padding:0 20px;border-radius:14px;
+  font-weight:700;height:44px;font-size:.9rem;transition:all .15s;flex-shrink:0;
+}
+#sendBtn:hover:not(:disabled){background:#8fbcff}
+#sendBtn:disabled{opacity:.5;cursor:wait}
+#statusBar{
+  font-size:.75rem;color:var(--muted);padding:2px 18px 0;max-width:900px;margin:0 auto;
+  min-height:16px;
+}
+#scrollBottom{
+  position:absolute;bottom:90px;right:20px;width:38px;height:38px;border-radius:50%;
+  background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  display:none;align-items:center;justify-content:center;font-size:1.1rem;
+  box-shadow:var(--shadow);z-index:10;
+}
+#scrollBottom.show{display:flex}
+#scrollBottom:hover{background:var(--panel3)}
+
+/* ---------- SETTINGS PANEL ---------- */
+.settingsPanel{
+  position:fixed;top:0;right:0;bottom:0;width:360px;max-width:100vw;
+  background:var(--panel);border-left:1px solid var(--border);padding:20px;
+  transform:translateX(100%);transition:transform .3s ease;z-index:50;
+  overflow-y:auto;
+}
+.settingsPanel.open{transform:translateX(0)}
+.settingsPanel .closeBtn{
+  position:absolute;top:12px;right:14px;font-size:1.5rem;color:var(--text);
+  background:none;border:none;padding:4px 8px;border-radius:6px;
+}
+.settingsPanel .closeBtn:hover{background:var(--panel2)}
+.settingsPanel h3{margin-bottom:18px;font-size:1.1rem}
+.settingsPanel label{
+  display:block;margin:14px 0 5px;font-size:.8rem;color:var(--muted);
+  font-weight:600;text-transform:uppercase;letter-spacing:.4px;
+}
+.settingsPanel input[type=text],
+.settingsPanel input[type=number],
+.settingsPanel select{
+  width:100%;background:var(--panel2);border:1px solid var(--border);
+  border-radius:8px;padding:9px 11px;font-size:.9rem;
+}
+.settingsPanel input[type=text]:focus,
+.settingsPanel select:focus{outline:none;border-color:var(--accent)}
+.settingsPanel .checkRow{
+  display:flex;align-items:center;gap:8px;margin:10px 0;
+  font-size:.9rem;color:var(--text);text-transform:none;letter-spacing:0;font-weight:400;
+}
+.settingsPanel .checkRow input{width:auto}
+.settingsPanel button.primary{
+  margin-top:22px;width:100%;background:var(--accent);color:var(--bg);
+  padding:11px;border-radius:10px;font-weight:700;font-size:.9rem;
+}
+.settingsPanel button.primary:hover{background:#8fbcff}
+.settingsPanel .section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.settingsPanel .section h4{font-size:.9rem;margin-bottom:10px}
+
+/* ---------- TOASTS ---------- */
+#toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  padding:10px 16px;font-size:.85rem;box-shadow:var(--shadow);
+  animation:toastIn .3s ease;pointer-events:auto;max-width:400px;
+}
+.toast.error{border-color:var(--danger);color:#ffbaba}
+.toast.success{border-color:var(--success);color:#a7f3d0}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- REMINDER MODAL ---------- */
+.modalBackdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;
+  align-items:center;justify-content:center;z-index:80;padding:20px;
+}
+.modalBackdrop.open{display:flex}
+.modalBox{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:20px;max-width:420px;width:100%;box-shadow:var(--shadow);
+}
+.modalBox h3{margin-bottom:10px;font-size:1.1rem}
+.modalBox p{margin-bottom:14px;color:var(--muted);font-size:.9rem}
+.modalBox .actions{display:flex;gap:8px;justify-content:flex-end}
+.modalBox button{padding:8px 16px;border-radius:8px;font-weight:600;font-size:.88rem}
+.modalBox .cancel{background:var(--panel2);border:1px solid var(--border)}
+.modalBox .confirm{background:var(--accent);color:var(--bg)}
+
+/* ---------- MOBILE ---------- */
+@media (max-width:760px){
+  #sidebar{
+    position:absolute;left:0;top:0;height:100%;z-index:60;
+    transform:translateX(-100%);box-shadow:4px 0 20px rgba(0,0,0,.5);
+  }
+  #sidebar.open{transform:translateX(0)}
+  #menuBtn{display:block}
+  .msgContent{max-width:88%}
+  #messages{padding:16px 12px}
+  .settingsPanel{width:100vw}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div id="sidebarHeader">
+      <div id="brand"><span class="dot" id="onlineDot"></span> 🧠 Mérida</div>
+      <button id="newChat">＋ Nuevo chat</button>
+      <input id="searchBox" type="text" placeholder="🔍 Buscar en conversaciones…">
+    </div>
+    <ul id="chatList"></ul>
+    <div id="sidebarFooter">
+      <button id="exportAll" title="Exportar todas las conversaciones">⬇ Exportar</button>
+      <button id="importBtn" title="Importar conversaciones">⬆ Importar</button>
+      <button id="clearAll" title="Borrar todo">🗑 Borrar todo</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <header id="chatHeader">
+      <button id="menuBtn" aria-label="Menú">☰</button>
+      <h2 id="chatTitle">Nueva conversación</h2>
+      <div class="headerActions">
+        <button id="searchChatBtn" title="Buscar en este chat">🔍</button>
+        <button id="exportChatBtn" title="Exportar este chat">⬇</button>
+        <button id="deleteChatBtn" title="Eliminar este chat">🗑</button>
+        <button id="settingsBtn" title="Ajustes">⚙</button>
+      </div>
+    </header>
+    <div id="searchInChat">
+      <input id="searchInChatInput" type="text" placeholder="Buscar en este chat…">
+    </div>
+    <div id="messages" aria-live="polite"></div>
+    <button id="scrollBottom" title="Ir al final">⬇</button>
+    <div id="statusBar"></div>
+    <div id="inputArea">
+      <form id="inputForm">
+        <div id="inputRow">
+          <textarea id="input" placeholder="Escríbeme… (Enter = enviar · Shift+Enter = nueva línea)" rows="1"></textarea>
+          <button id="sendBtn" type="submit">Enviar</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<div class="settingsPanel" id="settingsPanel">
+  <button class="closeBtn" id="settingsClose">×</button>
+  <h3>⚙ Ajustes de Mérida</h3>
+
+  <label>Tu nombre</label>
+  <input type="text" id="prefName" placeholder="¿Cómo te llamas?">
+
+  <label>Idioma preferido</label>
+  <select id="prefLang">
+    <option value="auto">🌐 Detectar automáticamente</option>
+    <option value="es">🇪🇸 Español</option>
+    <option value="en">🇬🇧 English</option>
+    <option value="pt">🇵🇹 Português</option>
+    <option value="fr">🇫🇷 Français</option>
+    <option value="de">🇩🇪 Deutsch</option>
+    <option value="it">🇮🇹 Italiano</option>
+  </select>
+
+  <label>Nivel de detalle</label>
+  <select id="prefDetail">
+    <option value="auto">Automático (según la pregunta)</option>
+    <option value="short">Breve</option>
+    <option value="long">Detallado</option>
+  </select>
+
+  <label>Tono</label>
+  <select id="prefTone">
+    <option value="neutral">Neutral</option>
+    <option value="formal">Formal</option>
+    <option value="casual">Casual y cercano</option>
+  </select>
+
+  <div class="section">
+    <h4>🔔 Notificaciones y recordatorios</h4>
+    <div class="checkRow">
+      <input type="checkbox" id="prefNotif">
+      <label for="prefNotif" style="margin:0;text-transform:none;letter-spacing:0;font-size:.9rem">Permitir notificaciones del sistema</label>
+    </div>
+    <div class="checkRow">
+      <input type="checkbox" id="prefSounds">
+      <label for="prefSounds" style="margin:0;text-transform:none;letter-spacing:0;font-size:.9rem">Sonido al recibir recordatorios</label>
+    </div>
+    <button id="testNotif" style="margin-top:8px;background:var(--panel2);border:1px solid var(--border);padding:7px 12px;border-radius:8px;font-size:.8rem">Probar notificación</button>
+  </div>
+
+  <div class="section">
+    <h4>🧠 Memoria y aprendizaje</h4>
+    <div class="checkRow">
+      <input type="checkbox" id="prefCrossChat" checked>
+      <label for="prefCrossChat" style="margin:0;text-transform:none;letter-spacing:0;font-size:.9rem">Recordar entre conversaciones</label>
+    </div>
+    <div class="checkRow">
+      <input type="checkbox" id="prefLearn" checked>
+      <label for="prefLearn" style="margin:0;text-transform:none;letter-spacing:0;font-size:.9rem">Aprender de nuestras charlas</label>
+    </div>
+    <button id="clearFacts" style="margin-top:8px;background:var(--panel2);border:1px solid var(--border);padding:7px 12px;border-radius:8px;font-size:.8rem">Olvidar lo aprendido sobre mí</button>
+  </div>
+
+  <div class="section">
+    <h4>🌐 Conexión</h4>
+    <div class="checkRow">
+      <input type="checkbox" id="prefOnline" checked>
+      <label for="prefOnline" style="margin:0;text-transform:none;letter-spacing:0;font-size:.9rem">Permitir consultas a internet (Wikipedia)</label>
+    </div>
+  </div>
+
+  <button class="primary" id="savePrefs">Guardar ajustes</button>
+</div>
+
+<div id="toasts"></div>
+
+<div class="modalBackdrop" id="modalBackdrop">
+  <div class="modalBox">
+    <h3 id="modalTitle">Confirmar</h3>
+    <p id="modalText"></p>
+    <div class="actions">
+      <button class="cancel" id="modalCancel">Cancelar</button>
+      <button class="confirm" id="modalConfirm">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none">
+
+<script>
+'use strict';
+/* ==========================================================
+   MÉRIDA — Núcleo completo
+   ========================================================== */
+   
+   /* ---------- UTILIDADES BÁSICAS ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function normalize(w){return String(w).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\p{L}\p{N}]/gu,'')}
+function tokenize(text){return (String(text).match(/[\p{L}\p{N}]+/gu)||[]).map(normalize).filter(Boolean)}
+function showToast(msg, type='info', ms=3500){
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, ms);
+}
+function confirmDialog(title, text){
+  return new Promise(resolve => {
+    $('#modalTitle').textContent = title;
+    $('#modalText').textContent = text;
+    $('#modalBackdrop').classList.add('open');
+    const close = ok => {
+      $('#modalBackdrop').classList.remove('open');
+      $('#modalConfirm').removeEventListener('click', onOk);
+      $('#modalCancel').removeEventListener('click', onNo);
+      resolve(ok);
+    };
+    const onOk = () => close(true);
+    const onNo = () => close(false);
+    $('#modalConfirm').addEventListener('click', onOk);
+    $('#modalCancel').addEventListener('click', onNo);
+  });
+}
+
+/* ---------- LEVENSHTEIN + DISTANCIA FONÉTICA ---------- */
+function levenshtein(a, b){
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  if (a === b) return 0;
+  let prev = Array.from({length: a.length + 1}, (_, i) => i);
+  for (let i = 1; i <= b.length; i++){
+    const cur = [i];
+    for (let j = 1; j <= a.length; j++){
+      cur[j] = b[i-1] === a[j-1]
+        ? prev[j-1]
+        : 1 + Math.min(prev[j-1], cur[j-1], prev[j]);
+    }
+    prev = cur;
+  }
+  return prev[a.length];
+}
+
+// Clave fonética simple (inspirada en Metaphone para español)
+function phoneticKey(word){
+  let w = normalize(word);
+  if (!w) return '';
+  w = w.replace(/[^a-z]/g, '');
+  // Reglas de simplificación fonética en español
+  w = w.replace(/ph/g, 'f');
+  w = w.replace(/[cq]/g, 'k');
+  w = w.replace(/z/g, 's');
+  w = w.replace(/[vw]/g, 'b');
+  w = w.replace(/ll/g, 'y');
+  w = w.replace(/ñ/g, 'n');
+  w = w.replace(/h/g, '');
+  w = w.replace(/[áàä]/g, 'a').replace(/[éèë]/g, 'e').replace(/[íìï]/g, 'i').replace(/[óòö]/g, 'o').replace(/[úùü]/g, 'u');
+  w = w.replace(/(.)\1+/g, '$1'); // letras repetidas
+  if (w.length > 1) {
+    w = w[0] + w.slice(1).replace(/[aeiou]/g, '');
+  }
+  return w.slice(0, 6);
+}
+
+/* ---------- IDIOMA ---------- */
+const LANGS = ['es','en','pt','fr','de','it'];
+const LANG_HINTS = {
+  es:['que','de','el','la','los','las','por','para','con','una','como','qué','cómo','está','hola','gracias','quiero','puedes','necesito','dime','cuéntame'],
+  en:['the','and','of','to','in','is','are','what','how','hello','thanks','please','want','can','need','tell','give'],
+  pt:['que','de','o','a','os','as','para','com','uma','como','olá','obrigado','você','quero','preciso','diga','conte'],
+  fr:['le','la','les','de','et','à','est','que','comment','bonjour','merci','veux','peux','besoin','dis','raconte'],
+  de:['der','die','das','und','ist','was','wie','hallo','danke','will','kann','brauche','sag','erzähl'],
+  it:['il','la','di','e','che','è','come','ciao','grazie','sono','voglio','posso','bisogno','dimmi','racconta']
+};
+function detectLang(text){
+  const t = ' ' + String(text).toLowerCase() + ' ';
+  let best = 'es', bestScore = 0;
+  for (const [lang, words] of Object.entries(LANG_HINTS)){
+    let score = 0;
+    for (const w of words){
+      if (t.includes(' ' + w + ' ')) score += 2;
+      else if (t.includes(' ' + w)) score += 1;
+    }
+    if (score > bestScore){ bestScore = score; best = lang; }
+  }
+  return LANGS.includes(best) ? best : 'es';
+}
+
+/* ---------- SENTIMIENTO ---------- */
+const NEG_HINTS = new Set(['triste','solo','sola','solitario','sola','deprimido','deprimida','ansioso','ansiosa','enojado','enojada','molesto','molesta','cansado','cansada','frustrado','frustrada','preocupado','preocupada','miedo','asustado','asustada','estresado','estresada','llorar','llorando','mal','fatal','horrible','odio','asco','sad','lonely','depressed','anxious','angry','upset','tired','frustrated','worried','afraid','stressed','hate','awful','horrible','triste','sozinho','sozinha','deprimido','ansioso','irritado','cansado','preocupado','medo','seul','déprimé','anxieux','en colère','fatigué','frustré','inquiet','effrayé','peur','traurig','einsam','deprimiert','ängstlich','wütend','verärgert','müde','frustriert','besorgt','verängstigt','angst','depresso','arrabbiato','stanco','frustrato','preoccupato','spaventato','paura']);
+const POS_HINTS = new Set(['feliz','contento','contenta','bien','genial','gracias','agradecido','agradecida','excelente','maravilloso','maravillosa','amor','amo','quiero','encanta','happy','great','good','thankful','grateful','excited','love','awesome','wonderful','feliz','contente','grato','ótimo','glücklich','zufrieden','dankbar','toll','felice','grato','fantastico']);
+function sentiment(text){
+  let neg = 0, pos = 0;
+  tokenize(text).forEach(t => {
+    if (NEG_HINTS.has(t)) neg++;
+    if (POS_HINTS.has(t)) pos++;
+  });
+  return neg > pos ? 'neg' : pos > neg ? 'pos' : 'neu';
+}
+
+/* ---------- FILTRO DE LENGUAJE VULGAR ---------- */
+const VULGAR = new Set(['puta','puto','mierda','joder','coño','cabron','cabrona','pendejo','pendeja','verga','carajo','culero','culera','perra','zorra','marica','maricon','fuck','shit','bitch','asshole','bastard','cunt','dick','pussy','porra','caralho','merda','buceta','foder','merde','putain','connard','salope','scheiße','scheisse','arschloch','fotze','wichser']);
+function containsVulgar(text){return tokenize(text).some(t => VULGAR.has(t))}
+
+/* ---------- CORRECTOR ORTOGRÁFICO INTELIGENTE ---------- */
+const COMMON_TYPOS = {
+  'k':'que','q':'que','xq':'porque','pq':'porque','tmb':'también','tmbn':'también','tb':'también',
+  'dnd':'dónde','dnde':'dónde','qndo':'cuando','cdo':'cuando','ola':'hola','salu2':'saludos',
+  'bn':'bien','bno':'bueno','bna':'buena','grax':'gracias','grasias':'gracias','xfa':'por favor',
+  'habr':'haber','habra':'habrá','aki':'aquí','ai':'ahí','ahy':'ahí','mñn':'mañana','mñna':'mañana',
+  'tqm':'te quiero mucho','ntp':'no te preocupes','sip':'sí','nop':'no','ok':'ok','okk':'ok','okis':'ok',
+  'u':'you','r':'are','ur':'your','thx':'thanks','pls':'please','plz':'please','bc':'because',
+  'b4':'before','gr8':'great','w8':'wait','cuz':'because','dont':"don't",'cant':"can't",'wont':"won't",'isnt':"isn't",
+  'vc':'você','vcs':'vocês','tbm':'também','vlw':'valeu','obg':'obrigado','obgd':'obrigado',
+  'pcq':'parce que','qd':'quand','tjs':'toujours','bcp':'beaucoup','svp':"s'il vous plaît",
+  'vlt':'vielleicht','cm':'come','qnd':'quando','xke':'perché','grz':'grazie'
+};
+
+class SpellCorrector{
+  constructor(dictionary){
+    this.dict = new Set();
+    this.phoneticMap = new Map();
+    this.byLen = new Map();
+    for (const w of dictionary){
+      const n = normalize(w);
+      if (!n || n.length < 2) continue;
+      this.dict.add(n);
+      const pk = phoneticKey(n);
+      if (!this.phoneticMap.has(pk)) this.phoneticMap.set(pk, []);
+      this.phoneticMap.get(pk).push(n);
+      if (!this.byLen.has(n.length)) this.byLen.set(n.length, []);
+      this.byLen.get(n.length).push(n);
+    }
+  }
+  correctWord(word){
+    const lower = word.toLowerCase();
+    if (COMMON_TYPOS[lower]){
+      const c = COMMON_TYPOS[lower];
+      return word[0] === word[0].toUpperCase() ? c[0].toUpperCase() + c.slice(1) : c;
+    }
+    const n = normalize(word);
+    if (n.length < 3 || this.dict.has(n)) return word;
+    // 1. Fonética
+    const pk = phoneticKey(n);
+    const phonCands = this.phoneticMap.get(pk) || [];
+    if (phonCands.length === 1) return phonCands[0];
+    if (phonCands.length > 1){
+      let best = phonCands[0], bestD = 99;
+      for (const c of phonCands){
+        const d = levenshtein(n, c);
+        if (d < bestD){ bestD = d; best = c; }
+      }
+      if (bestD <= 2) return best;
+    }
+    // 2. Levenshtein por longitud ±2
+    let best = null, bestDist = 3;
+    for (let L = Math.max(2, n.length - 2); L <= n.length + 2; L++){
+      const cands = this.byLen.get(L) || [];
+      for (const c of cands){
+        const d = levenshtein(n, c);
+        if (d < bestDist){ bestDist = d; best = c; if (d === 1) break; }
+      }
+      if (bestDist === 1) break;
+    }
+    return best && bestDist <= 2 ? best : word;
+  }
+  correct(text){
+    return String(text).split(/(\s+)/).map(part => {
+      if (/^\s+$/.test(part)) return part;
+      return this.correctWord(part);
+    }).join('');
+  }
+}
+
+/* ---------- SOLUCIONADOR MATEMÁTICO ---------- */
+class MathSolver{
+  static solve(input){
+    let str = String(input).replace(/\s+/g, '').replace(/,/g, '.').toLowerCase();
+    str = str.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+    str = str.replace(/sqrt/g, '√').replace(/pi/gi, 'π');
+    let pos = 0;
+    const peek = () => str[pos];
+    const eat = () => str[pos++];
+    function expr(){
+      let l = term();
+      while (peek() === '+' || peek() === '-'){
+        const op = eat(); const r = term();
+        l = op === '+' ? l + r : l - r;
+      }
+      return l;
+    }
+    function term(){
+      let l = power();
+      while (peek() === '*' || peek() === '/' || peek() === '%'){
+        const op = eat(); const r = power();
+        if (op === '*') l *= r;
+        else if (op === '/') l /= r;
+        else l %= r;
+      }
+      return l;
+    }
+    function power(){
+      const base = unary();
+      if (peek() === '^'){ eat(); return Math.pow(base, power()); }
+      return base;
+    }
+    function unary(){
+      if (peek() === '-'){ eat(); return -unary(); }
+      if (peek() === '+'){ eat(); return unary(); }
+      return primary();
+    }
+    function primary(){
+      if (peek() === '('){
+        eat(); const v = expr();
+        if (peek() === ')') eat();
+        return v;
+      }
+      if (peek() === '√'){
+        eat();
+        if (peek() === '('){
+          eat(); const v = expr();
+          if (peek() === ')') eat();
+          return Math.sqrt(v);
+        }
+        return Math.sqrt(primary());
+      }
+      const fn = str.slice(pos).match(/^(sin|cos|tan|log|ln|abs|floor|ceil|round|exp|min|max|pow)\(/);
+      if (fn){
+        pos += fn[0].length;
+        const args = [expr()];
+        while (peek() === ','){ eat(); args.push(expr()); }
+        if (peek() === ')') eat();
+        const fns = {sin:Math.sin,cos:Math.cos,tan:Math.tan,log:Math.log10,ln:Math.log,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,exp:Math.exp,min:Math.min,max:Math.max,pow:Math.pow};
+        return fns[fn[1]](...args);
+      }
+      if (peek() === 'π'){ eat(); return Math.PI; }
+      const n = str.slice(pos).match(/^\d+(\.\d+)?/);
+      if (n){ pos += n[0].length; return parseFloat(n[0]); }
+      throw new Error('Expresión inválida');
+    }
+    const result = expr();
+    if (pos < str.length) throw new Error('Símbolo inesperado: ' + str[pos]);
+    if (!isFinite(result)) throw new Error('Resultado no finito');
+    // Redondeo inteligente
+    if (Math.abs(result) < 1e-10) return 0;
+    if (Number.isInteger(result)) return result;
+    return Math.round(result * 1e10) / 1e10;
+  }
+  static isMathQuery(text){
+    const t = String(text).replace(/[¿?¡!]/g, '').trim();
+    if (/^(calcula|resuelve|cuanto es|cuánto es|compute|solve|what is|what's|quanto é|quanto e)\b/i.test(t) && /[\d\+\-\*\/\^\(\)]/i.test(t)) return true;
+    if (/^[\d\s\+\-\*\/\(\)\.\^%,×÷√π]+$/i.test(t) && /\d/.test(t) && /[\+\-\*\/\^%]/.test(t)) return true;
+    return false;
+  }
+  static extractExpression(text){
+    const m = String(text).replace(/[¿?¡!]/g, '').match(/(?:calcula|resuelve|cuanto es|cuánto es|compute|solve|what is|what's|quanto é|quanto e)\s*(.+)/i);
+    return m ? m[1].trim() : text;
+  }
+  // Ecuaciones lineales: ax + b = c
+  static solveLinear(text){
+    const m = String(text).replace(/\s+/g, '').match(/^(-?\d*\.?\d*)\s*x\s*([+\-]\s*\d+\.?\d*)?\s*=\s*(-?\d+\.?\d*)$/i);
+    if (!m) return null;
+    let a = m[1];
+    if (a === '' || a === '+') a = 1;
+    else if (a === '-') a = -1;
+    else a = parseFloat(a);
+    const b = m[2] ? parseFloat(m[2].replace(/\s/g, '')) : 0;
+    const c = parseFloat(m[3]);
+    if (a === 0) return null;
+    const x = (c - b) / a;
+    return { x, a, b, c };
+  }
+}
+
+/* ---------- CONVERSOR DE UNIDADES ---------- */
+class UnitConverter{
+  static UNITS = {
+    km:{type:'length', toBase: v => v * 1000}, m:{type:'length', toBase: v => v},
+    cm:{type:'length', toBase: v => v / 100}, mm:{type:'length', toBase: v => v / 1000},
+    mi:{type:'length', toBase: v => v * 1609.344}, ft:{type:'length', toBase: v => v * 0.3048},
+    in:{type:'length', toBase: v => v * 0.0254}, yd:{type:'length', toBase: v => v * 0.9144},
+    kg:{type:'mass', toBase: v => v}, g:{type:'mass', toBase: v => v / 1000},
+    mg:{type:'mass', toBase: v => v / 1e6}, lb:{type:'mass', toBase: v => v * 0.453592},
+    oz:{type:'mass', toBase: v => v * 0.0283495}, t:{type:'mass', toBase: v => v * 1000},
+    c:{type:'temp', toBase: v => v, fromBase: v => v},
+    f:{type:'temp', toBase: v => (v - 32) * 5/9, fromBase: v => v * 9/5 + 32},
+    k:{type:'temp', toBase: v => v - 273.15, fromBase: v => v + 273.15},
+    l:{type:'volume', toBase: v => v}, ml:{type:'volume', toBase: v => v / 1000},
+    gal:{type:'volume', toBase: v => v * 3.78541}, cup:{type:'volume', toBase: v => v * 0.236588},
+    s:{type:'time', toBase: v => v}, min:{type:'time', toBase: v => v * 60},
+    h:{type:'time', toBase: v => v * 3600}, d:{type:'time', toBase: v => v * 86400},
+    wk:{type:'time', toBase: v => v * 604800}, yr:{type:'time', toBase: v => v * 31536000}
+  };
+  static tryConvert(text){
+    const m = String(text).match(/([\d.]+)\s*([a-z]+)\s*(?:a|to|en|à|in|zu|in)\s*([a-z]+)/i);
+    if (!m) return null;
+    const v = parseFloat(m[1]);
+    const from = m[2].toLowerCase();
+    const to = m[3].toLowerCase();
+    if (!this.UNITS[from] || !this.UNITS[to]) return null;
+    if (this.UNITS[from].type !== this.UNITS[to].type) return null;
+    let base;
+    if (this.UNITS[from].type === 'temp'){
+      if (from === 'c') base = v;
+      else if (from === 'f') base = (v - 32) * 5/9;
+      else base = v - 273.15;
+      let result;
+      if (to === 'c') result = base;
+      else if (to === 'f') result = base * 9/5 + 32;
+      else result = base + 273.15;
+      return { value: Math.round(result * 1e6) / 1e6, from, to };
+    }
+    base = this.UNITS[from].toBase(v);
+    const result = base / (this.UNITS[to].toBase(1));
+    return { value: Math.round(result * 1e6) / 1e6, from, to };
+  }
+}
+
+/* ---------- PARSER DE FECHA/HORA NATURAL ---------- */
+const MONTHS_ES = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11};
+const MONTHS_EN = {january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+const WEEKDAYS = {domingo:0,lunes:1,martes:2,miercoles:3,miércoles:3,jueves:4,viernes:5,sabado:6,sábado:6,sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
+
+class TimeParser{
+  static parse(text, now = new Date()){
+    const lower = String(text).toLowerCase();
+    // en X unidades
+    let m = lower.match(/(?:en|dentro de|in|dans|in)\s+(\d+)\s*(segundos?|seconds?|minutos?|minutes?|horas?|hours?|d[ií]as?|days?|semanas?|weeks?)/);
+    if (m){
+      const n = parseInt(m[1]);
+      const u = m[2];
+      let ms = 0;
+      if (/^s(eg|ec)/.test(u)) ms = n * 1000;
+      else if (/^min/.test(u)) ms = n * 60000;
+      else if (/^hor|^hour/.test(u)) ms = n * 3600000;
+      else if (/^d[ií]|^day/.test(u)) ms = n * 86400000;
+      else if (/^sem|^week/.test(u)) ms = n * 604800000;
+      return { when: new Date(now.getTime() + ms), what: this.extractWhat(text) };
+    }
+    // "a las HH:MM" o "a las HH"
+    m = lower.match(/a\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    if (m){
+      let h = parseInt(m[1]);
+      const mi = parseInt(m[2] || '0');
+      if (m[3] === 'pm' && h < 12) h += 12;
+      if (m[3] === 'am' && h === 12) h = 0;
+      if (!m[3] && (lower.includes('tarde') || lower.includes('noche')) && h < 12) h += 12;
+      const target = new Date(now);
+      if (/mañana/.test(lower) && !/por la mañana/.test(lower)) target.setDate(target.getDate() + 1);
+      target.setHours(h, mi, 0, 0);
+      if (target <= now) target.setDate(target.getDate() + 1);
+      return { when: target, what: this.extractWhat(text) };
+    }
+    // "mañana" solo
+    if (/\bmañana\b/.test(lower) && !/por la mañana/.test(lower) && !/\d/.test(lower)){
+      const t = new Date(now); t.setDate(t.getDate() + 1); t.setHours(9, 0, 0, 0);
+      return { when: t, what: this.extractWhat(text) };
+    }
+    // "pasado mañana"
+    if (/pasado\s+mañana/.test(lower)){
+      const t = new Date(now); t.setDate(t.getDate() + 2); t.setHours(9, 0, 0, 0);
+      return { when: t, what: this.extractWhat(text) };
+    }
+    // Día de semana
+    for (const [dayName, dayNum] of Object.entries(WEEKDAYS)){
+      if (lower.includes(dayName)){
+        const t = new Date(now);
+        const diff = (dayNum - t.getDay() + 7) % 7 || 7;
+        t.setDate(t.getDate() + diff);
+        const tm = lower.match(/a\s+las?\s+(\d{1,2})(?::(\d{2}))?/);
+        if (tm) t.setHours(parseInt(tm[1]), parseInt(tm[2]||'0'), 0, 0);
+        else t.setHours(9, 0, 0, 0);
+        return { when: t, what: this.extractWhat(text) };
+      }
+    }
+    // Fecha específica "el 15 de enero a las 10"
+    m = lower.match(/(\d{1,2})\s+de\s+([a-záéíóú]+)(?:\s+(?:a\s+las?\s+)?(\d{1,2})(?::(\d{2}))?)?/);
+    if (m && MONTHS_ES[m[2]] !== undefined){
+      const d = parseInt(m[1]);
+      const mo = MONTHS_ES[m[2]];
+      const y = now.getFullYear();
+      const t = new Date(y, mo, d, m[3] ? parseInt(m[3]) : 9, m[4] ? parseInt(m[4]) : 0, 0, 0);
+      if (t < now) t.setFullYear(y + 1);
+      return { when: t, what: this.extractWhat(text) };
+    }
+    return null;
+  }
+  static extractWhat(text){
+    let m = text.match(/\bque\s+(.+)$/i);
+    if (m) return m[1].trim();
+    m = text.match(/\b(?:para|de|para que|de que)\s+(.+)$/i);
+    if (m) return m[1].trim();
+    return text.replace(/\b(recuérdame|recordarme|avísame|avisame|notifícame|notificame|remind me|alerta|programa|programar|agenda|agendar|pon|poner)\b/gi, '').replace(/\s+/g, ' ').trim();
+  }
+  static describe(d){
+    const now = new Date();
+    const diff = d - now;
+    const abs = Math.abs(diff);
+    if (abs < 60000) return 'en menos de un minuto';
+    if (abs < 3600000) return `en ${Math.round(abs/60000)} minutos`;
+    if (abs < 86400000) return `en ${Math.round(abs/3600000)} horas`;
+    if (abs < 604800000) return `en ${Math.round(abs/86400000)} días`;
+    return `el ${d.toLocaleDateString('es', {day:'numeric', month:'long', year:'numeric'})} a las ${d.toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'})}`;
+  }
+}
+
+/* ---------- BASE DE DATOS (IndexedDB) ---------- */
+class DB{
+  constructor(){
+    this.db = null;
+    this.name = 'merida-db';
+    this.version = 1;
+  }
+  async open(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.name, this.version);
+      req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('chats')){
+          const s = d.createObjectStore('chats', { keyPath: 'id' });
+          s.createIndex('updatedAt', 'updatedAt');
+        }
+        if (!d.objectStoreNames.contains('messages')){
+          const s = d.createObjectStore('messages', { keyPath: 'id' });
+          s.createIndex('chatId', 'chatId');
+          s.createIndex('ts', 'ts');
+        }
+        if (!d.objectStoreNames.contains('reminders')){
+          const s = d.createObjectStore('reminders', { keyPath: 'id' });
+          s.createIndex('when', 'when');
+        }
+        if (!d.objectStoreNames.contains('prefs')) d.createObjectStore('prefs', { keyPath: 'key' });
+        if (!d.objectStoreNames.contains('facts')){
+          const s = d.createObjectStore('facts', { keyPath: 'id' });
+          s.createIndex('key', 'key');
+        }
+        if (!d.objectStoreNames.contains('learned')){
+          const s = d.createObjectStore('learned', { keyPath: 'id' });
+          s.createIndex('question', 'question');
+        }
+      };
+      req.onsuccess = () => { this.db = req.result; resolve(); };
+      req.onerror = () => reject(req.error);
+    });
+  }
+  _tx(store, mode){ return this.db.transaction(store, mode || 'readonly').objectStore(store); }
+  _req(r){ return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+
+  // CHATS
+  async createChat(title){
+    const chat = { id: uid(), title: title || 'Nueva conversación', createdAt: Date.now(), updatedAt: Date.now() };
+    await this._req(this._tx('chats', 'readwrite').put(chat));
+    return chat;
+  }
+  async getChats(){
+    const all = await this._req(this._tx('chats').getAll());
+    return all.sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+  async getChat(id){ return this._req(this._tx('chats').get(id)); }
+  async updateChat(id, patch){
+    const c = await this.getChat(id); if (!c) return;
+    Object.assign(c, patch, { updatedAt: Date.now() });
+    await this._req(this._tx('chats', 'readwrite').put(c));
+  }
+  async deleteChat(id){
+    await this._req(this._tx('chats', 'readwrite').delete(id));
+    const msgs = await this._req(this._tx('messages').index('chatId').getAll(id));
+    const t = this._tx('messages', 'readwrite');
+    for (const m of msgs) t.delete(m.id);
+    await new Promise(r => t.transaction.oncomplete = r);
+  }
+  async deleteAllChats(){
+    await this._req(this._tx('chats', 'readwrite').clear());
+    await this._req(this._tx('messages', 'readwrite').clear());
+  }
+
+  // MESSAGES
+  async addMessage(chatId, role, content, extra){
+    const m = { id: uid(), chatId, role, content, extra: extra || null, ts: Date.now() };
+    await this._req(this._tx('messages', 'readwrite').put(m));
+    await this.updateChat(chatId, {});
+    return m;
+  }
+  async getMessages(chatId){
+    const all = await this._req(this._tx('messages').index('chatId').getAll(chatId));
+    return all.sort((a, b) => a.ts - b.ts);
+  }
+  async deleteMessage(id){ await this._req(this._tx('messages', 'readwrite').delete(id)); }
+  async getAllMessages(){ return this._req(this._tx('messages').getAll()); }
+  async getMessagesForContext(chatId){
+    return this.getMessages(chatId);
+  }
+
+  // REMINDERS
+  async addReminder(when, message, chatId){
+    const r = { id: uid(), when: when.getTime(), message, chatId: chatId || null, fired: false, createdAt: Date.now() };
+    await this._req(this._tx('reminders', 'readwrite').put(r));
+    return r;
+  }
+  async getReminders(){ return this._req(this._tx('reminders').getAll()); }
+  async deleteReminder(id){ await this._req(this._tx('reminders', 'readwrite').delete(id)); }
+  async markReminderFired(id){
+    const r = await this._req(this._tx('reminders').get(id));
+    if (r){ r.fired = true; await this._req(this._tx('reminders', 'readwrite').put(r)); }
+  }
+  async getPendingReminders(){
+    const all = await this.getReminders();
+    return all.filter(r => !r.fired).sort((a, b) => a.when - b.when);
+  }
+
+  // PREFS
+  async setPref(key, value){ await this._req(this._tx('prefs', 'readwrite').put({ key, value })); }
+  async getPref(key, def){
+    const p = await this._req(this._tx('prefs').get(key));
+    return p ? p.value : def;
+  }
+  async getAllPrefs(){
+    const all = await this._req(this._tx('prefs').getAll());
+    const o = {}; for (const p of all) o[p.key] = p.value; return o;
+  }
+
+  // FACTS (aprendizaje sobre el usuario)
+  async addFact(key, value, source){
+    const f = { id: uid(), key, value, source: source || 'auto', ts: Date.now() };
+    await this._req(this._tx('facts', 'readwrite').put(f));
+    return f;
+  }
+  async getFacts(){ return this._req(this._tx('facts').getAll()); }
+  async getFactsByKey(key){
+    return this._req(this._tx('facts').index('key').getAll(key));
+  }
+  async clearFacts(){ await this._req(this._tx('facts', 'readwrite').clear()); }
+
+  // LEARNED (Q&A aprendidas)
+  async addLearned(question, answer, source){
+    const l = { id: uid(), question, answer, source: source || 'auto', ts: Date.now(), hits: 0 };
+    await this._req(this._tx('learned', 'readwrite').put(l));
+    return l;
+  }
+  async getLearned(){ return this._req(this._tx('learned').getAll()); }
+  async clearLearned(){ await this._req(this._tx('learned', 'readwrite').clear()); }
+}
+
+/* ---------- PROGRAMADOR DE RECORDATORIOS ---------- */
+class Scheduler{
+  constructor(db){
+    this.db = db;
+    this.timers = new Map();
+    this._init();
+    setInterval(() => this._checkDue(), 20000);
+  }
+  async _init(){
+    await sleep(500);
+    this._checkDue();
+  }
+  async _checkDue(){
+    try {
+      const all = await this.db.getReminders();
+      const now = Date.now();
+      for (const r of all){
+        if (r.fired) continue;
+        const delay = r.when - now;
+        if (delay <= 0) this._fire(r);
+        else if (!this.timers.has(r.id)) this._setTimer(r);
+      }
+    } catch (_) {}
+  }
+  _setTimer(r){
+    const delay = Math.min(Math.max(r.when - Date.now(), 0), 2147483647);
+    const t = setTimeout(() => this._fire(r), delay);
+    this.timers.set(r.id, t);
+  }
+  async _fire(r){
+    if (this.timers.has(r.id)){ clearTimeout(this.timers.get(r.id)); this.timers.delete(r.id); }
+    await this.db.markReminderFired(r.id);
+    try {
+      if (window.Notification && Notification.permission === 'granted'){
+        const n = new Notification('Mérida — recordatorio', { body: r.message, tag: r.id, requireInteraction: true });
+        n.onclick = () => { window.focus(); n.close(); };
+      }
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent('merida-reminder', { detail: r }));
+    showToast('⏰ ' + r.message, 'success', 8000);
+  }
+  async add(when, message, chatId){
+    const r = await this.db.addReminder(when, message, chatId);
+    this._setTimer(r);
+    return r;
+  }
+  async listPending(){ return this.db.getPendingReminders(); }
+}
+
+/* ---------- RECUPERADOR (BM25 + TF-IDF + fuzzy) ---------- */
+class Retriever{
+  constructor(docs){
+    this.docs = docs || [];
+    this._build();
+  }
+  _build(){
+    const N = this.docs.length;
+    this.N = N;
+    this.avgdl = 0;
+    this.df = {};
+    this.docsTokens = [];
+    this.index = {};
+    let totalLen = 0;
+    this.docs.forEach((d, i) => {
+      const text = (d.title || '') + ' ' + (d.body || '') + ' ' + ((d.tags || []).join(' '));
+      const tokens = tokenize(text);
+      this.docsTokens.push(tokens);
+      totalLen += tokens.length;
+      new Set(tokens).forEach(t => { this.df[t] = (this.df[t] || 0) + 1; });
+      new Set(tokens).forEach(t => { (this.index[t] = this.index[t] || []).push(i); });
+    });
+    this.avgdl = totalLen / Math.max(N, 1);
+    this.idf = {};
+    for (const t in this.df){
+      this.idf[t] = Math.log((N - this.df[t] + 0.5) / (this.df[t] + 0.5) + 1);
+    }
+  }
+  add(d){ this.docs.push(d); this._build(); }
+  // BM25
+  search(q, topK){
+    const qTokens = tokenize(q);
+    if (!qTokens.length) return [];
+    const k1 = 1.5, b = 0.75;
+    const scores = new Map();
+    const qSet = new Set(qTokens);
+    for (const t of qSet){
+      const postings = this.index[t]; if (!postings) continue;
+      const idf = this.idf[t] || 0;
+      const qf = qTokens.filter(x => x === t).length;
+      for (const i of postings){
+        const dl = this.docsTokens[i].length;
+        const tf = this.docsTokens[i].filter(x => x === t).length;
+        const score = idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * dl / this.avgdl)) * qf;
+        scores.set(i, (scores.get(i) || 0) + score);
+      }
+    }
+    return [...scores.entries()]
+      .map(([i, s]) => ({ doc: this.docs[i], score: s }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK || 3);
+  }
+  // Búsqueda con fallback fonético
+  searchFuzzy(q, topK){
+    const direct = this.search(q, topK);
+    if (direct.length && direct[0].score > 3) return direct;
+    // Fallback: comparar con títulos por Levenshtein
+    const qNorm = normalize(q);
+    const qWords = qNorm.split(' ').filter(w => w.length > 2);
+    const scored = [];
+    for (const d of this.docs){
+      const titleNorm = normalize(d.title);
+      let bestOverlap = 0;
+      for (const w of qWords){
+        for (const tw of titleNorm.split(' ')){
+          const d_ = levenshtein(w, tw);
+          const sim = 1 - d_ / Math.max(w.length, tw.length);
+          if (sim > bestOverlap) bestOverlap = sim;
+        }
+      }
+      if (bestOverlap > 0.7) scored.push({ doc: d, score: bestOverlap * 10 });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    const merged = [...direct, ...scored.slice(0, topK)];
+    const seen = new Set();
+    return merged.filter(x => { if (seen.has(x.doc)) return false; seen.add(x.doc); return true; }).slice(0, topK);
+  }
+}
+
+/* ---------- ROTADOR DE RESPUESTAS (anti-repetición) ---------- */
+class TemplateRotator{
+  constructor(){
+    this.used = new Map();
+    this.recentOutputs = [];
+    this.MAX_RECENT = 30;
+  }
+  pick(key, templates){
+    if (!templates.length) return '';
+    let used = this.used.get(key);
+    if (!used){ used = new Set(); this.used.set(key, used); }
+    // Si ya se usaron todas, resetear
+    const avail = templates.filter(t => !used.has(t));
+    if (!avail.length){ used.clear(); return this.pick(key, templates); }
+    const chosen = pick(avail);
+    used.add(chosen);
+    return chosen;
+  }
+  // Registrar output completo para evitar respuestas idénticas
+  registerOutput(text){
+    this.recentOutputs.push(text);
+    if (this.recentOutputs.length > this.MAX_RECENT) this.recentOutputs.shift();
+  }
+  isTooSimilar(text){
+    const norm = normalize(text);
+    for (const prev of this.recentOutputs){
+      if (normalize(prev) === norm) return true;
+      // Jaccard
+      const a = new Set(norm.split(' '));
+      const b = new Set(normalize(prev).split(' '));
+      let inter = 0;
+      for (const x of a) if (b.has(x)) inter++;
+      const union = a.size + b.size - inter;
+      if (union > 5 && inter / union > 0.85) return true;
+    }
+    return false;
+  }
+}
+
+/* ---------- JUEGOS ---------- */
+class Games{
+  constructor(engine){
+    this.engine = engine;
+    this.active = null;
+  }
+  start(type){
+    if (type === 'trivia') return this.startTrivia();
+    if (type === 'guess') return this.startGuess();
+    if (type === 'rps') return this.startRPS();
+    if (type === 'adivina') return this.startAdivina();
+    if (type === 'hangman') return this.startHangman();
+    if (type === '20q') return this.start20Q();
+    if (type === 'wordchain') return this.startWordChain();
+    return '¿A qué quieres jugar? Puedo jugar: 🎯 trivia, 🎲 adivina el número, ✊ piedra-papel-tijera, 🔍 adivina el tema, 📝 ahorcado, ❓ 20 preguntas, 🔗 cadena de palabras.';
+  }
+  startTrivia(){
+    const qs = [
+      {q:'¿Cuál es el planeta más grande del sistema solar?', a:['jupiter','júpiter']},
+      {q:'¿Quién pintó la Mona Lisa?', a:['leonardo','da vinci','leonardo da vinci']},
+      {q:'¿Cuál es el río más caudaloso del mundo?', a:['amazonas']},
+      {q:'¿En qué año llegó el hombre a la Luna?', a:['1969']},
+      {q:'¿Cuál es el elemento químico con símbolo "O"?', a:['oxigeno','oxígeno']},
+      {q:'¿Quién escribió "Don Quijote de la Mancha"?', a:['cervantes','miguel de cervantes']},
+      {q:'¿Cuál es la capital de Francia?', a:['paris','parís']},
+      {q:'¿Cuántos huesos tiene el cuerpo humano adulto?', a:['206']},
+      {q:'¿Cuál es el océano más grande del mundo?', a:['pacifico','pacífico']},
+      {q:'¿Qué gas respiramos las personas para vivir?', a:['oxigeno','oxígeno']},
+      {q:'¿Cuál es el animal terrestre más grande?', a:['elefante']},
+      {q:'¿Cuántos continentes hay?', a:['7','siete']},
+      {q:'¿Cuál es el metal más precioso?', a:['oro','platino']},
+      {q:'¿Quién fue el primer presidente de Estados Unidos?', a:['washington','george washington']},
+      {q:'¿Cuál es el idioma más hablado del mundo?', a:['chino','mandarin','mandarín']}
+    ];
+    const q = pick(qs);
+    this.active = { type:'trivia', answer: q.a, question: q.q };
+    return `🎯 **Trivia**\n\n${q.q}\n\n*(Escribe "rendirse" para saber la respuesta)*`;
+  }
+  startGuess(){
+    this.active = { type:'guess', number: 1 + Math.floor(Math.random() * 100), tries: 0 };
+    return '🎲 **Adivina el número**\n\nHe pensado un número del 1 al 100. ¿Cuál crees que es?';
+  }
+  startRPS(){
+    this.active = { type:'rps' };
+    return '✊✋✌️ **Piedra, papel o tijera**\n\nDime tu jugada.';
+  }
+  startAdivina(){
+    const doc = pick(this.engine.retriever.docs);
+    this.active = { type:'adivina', doc };
+    const hint = doc.body.split('.')[0].slice(0, 140);
+    return `🔍 **Adivina el tema**\n\nPista: ${hint}…\n\n¿De qué hablo?`;
+  }
+  startHangman(){
+    const words = [
+      {w:'javascript', h:'Lenguaje de programación para la web'},
+      {w:'elefante', h:'Animal terrestre más grande'},
+      {w:'guitarra', h:'Instrumento musical de cuerdas'},
+      {w:'biblia', h:'Libro sagrado del cristianismo'},
+      {w:'planeta', h:'Cuerpo celeste que orbita una estrella'},
+      {w:'computadora', h:'Máquina para procesar información'},
+      {w:'mariposa', h:'Insecto de alas coloridas'},
+      {w:'historia', h:'Estudio del pasado'},
+      {w:'música', h:'Arte de combinar sonidos'},
+      {w:'democracia', h:'Gobierno del pueblo'}
+    ];
+    const {w, h} = pick(words);
+    this.active = { type:'hangman', word: w, hint: h, guessed: new Set(), attempts: 6 };
+    return `📝 **Ahorcado**\n\nPista: ${h}\n\n${this._hangmanDisplay()}\n\nIntentos restantes: 6\n\nDi una letra.`;
+  }
+  _hangmanDisplay(){
+    const w = this.active.word;
+    return w.split('').map(c => this.active.guessed.has(c) ? c : '_').join(' ');
+  }
+  start20Q(){
+    this.active = { type:'20q', questions: 0, chars: ['persona','animal','objeto','lugar'] };
+    const char = pick(this.active.chars);
+    this.active.char = char;
+    this.active.secret = pick(this.engine.retriever.docs).title;
+    return `❓ **20 Preguntas**\n\nHe pensado algo de tipo **${char}**. Tienes 20 preguntas para adivinarlo. Responde sí/no.`;
+  }
+  startWordChain(){
+    this.active = { type:'wordchain', lastWord: 'casa', used: new Set(['casa']) };
+    return '🔗 **Cadena de palabras**\n\nEmpezamos: **casa**\n\nDime una palabra que empiece con la última letra (a).';
+  }
+  async handle(input){
+    if (!this.active) return null;
+    const t = normalize(input);
+    if (/rendirse|give up|surrender/.test(t)){
+      const was = this.active;
+      this.active = null;
+      if (was.type === 'trivia') return `La respuesta era **${was.answer[0]}**.\n\n¿Otra ronda?`;
+      if (was.type === 'adivina') return `Era **${was.doc.title}**.`;
+      if (was.type === 'hangman') return `La palabra era **${was.word}**.`;
+      return '¡Buen intento! ¿Jugamos otra vez?';
+    }
+    if (this.active.type === 'trivia'){
+      const ok = this.active.answer.some(a => t.includes(normalize(a)) || normalize(a).includes(t));
+      const was = this.active;
+      this.active = null;
+      return ok ? `✅ ¡Correcto! 🎉\n\n¿Otra ronda? Escribe "trivia".` : `❌ Casi. La respuesta correcta era **${was.answer[0]}**.\n\n¿Probamos otra?`;
+    }
+    if (this.active.type === 'guess'){
+      const n = parseInt(input);
+      if (isNaN(n)) return 'Dime un número del 1 al 100. 🙂';
+      this.active.tries++;
+      if (n === this.active.number){ const tr = this.active.tries; this.active = null; return `🎉 ¡Acertaste en ${tr} intentos! Era el **${n}**.`; }
+      return n < this.active.number ? '📈 Más alto.' : '📉 Más bajo.';
+    }
+    if (this.active.type === 'rps'){
+      const opts = ['piedra','papel','tijera'];
+      const user = opts.find(o => t.includes(o));
+      if (!user) return 'Elige: piedra, papel o tijera.';
+      const bot = pick(opts);
+      const win = (user==='piedra'&&bot==='tijera')||(user==='papel'&&bot==='piedra')||(user==='tijera'&&bot==='papel');
+      const draw = user === bot;
+      this.active = null;
+      return `Tú: **${user}** — Yo: **${bot}**\n\n${draw ? '🤝 Empate.' : win ? '🎉 ¡Ganaste!' : '😄 ¡Gané!'}`;
+    }
+    if (this.active.type === 'adivina'){
+      const doc = this.active.doc;
+      const correct = normalize(doc.title).split(' ').some(w => t.includes(w)) || t === normalize(doc.title);
+      this.active = null;
+      return correct ? `✅ ¡Exacto! Era **${doc.title}**.` : `❌ No exactamente. Era **${doc.title}**.`;
+    }
+    if (this.active.type === 'hangman'){
+      const letter = input.trim().toLowerCase().match(/[a-záéíóúñ]/);
+      if (!letter) return 'Di una letra válida.';
+      const L = letter[0];
+      if (this.active.guessed.has(L)) return 'Ya probaste esa letra. Prueba otra.';
+      this.active.guessed.add(L);
+      if (this.active.word.includes(L)){
+        const display = this._hangmanDisplay();
+        if (!display.includes('_')){ const w = this.active.word; this.active = null; return `🎉 ¡Ganaste! La palabra era **${w}**.`; }
+        return `✅ ¡Bien!\n\n${display}\n\nIntentos restantes: ${this.active.attempts}`;
+      } else {
+        this.active.attempts--;
+        if (this.active.attempts <= 0){ const w = this.active.word; this.active = null; return `💀 ¡Ahorcado! La palabra era **${w}**.`; }
+        return `❌ No está.\n\n${this._hangmanDisplay()}\n\nIntentos restantes: ${this.active.attempts}`;
+      }
+    }
+    if (this.active.type === '20q'){
+      this.active.questions++;
+      if (this.active.questions > 20){ const s = this.active.secret; this.active = null; return `Se acabaron las preguntas. Era **${s}**.`; }
+      if (/^(s[ií]|yes|no)\b/.test(t)){
+        if (/adivina|es\b/i.test(t)){
+          const s = this.active.secret; this.active = null; return `¿Es **${s}**?`;
+        }
+      }
+      if (this.active.questions >= 20){
+        const s = this.active.secret; this.active = null; return `Era **${s}**.`;
+      }
+      return `Pregunta ${this.active.questions}/20. Sigue preguntando (sí/no). Si quieres adivinar, escribe "creo que es [algo]".`;
+    }
+    if (this.active.type === 'wordchain'){
+      const word = input.trim().toLowerCase().split(/\s+/)[0];
+      const lastChar = this.active.lastWord.slice(-1);
+      if (!word.startsWith(lastChar)) return `La palabra debe empezar con **${lastChar}**. Intenta de nuevo.`;
+      if (this.active.used.has(word)) return 'Esa palabra ya se usó. Prueba otra.';
+      this.active.used.add(word);
+      // Respuesta del bot: buscar palabra en KB
+      const candidates = this.engine.retriever.docs.map(d => d.title.toLowerCase().split(' ')[0]).filter(w => w.startsWith(word.slice(-1)) && !this.active.used.has(w));
+      if (!candidates.length){ this.active = null; return `🎉 ¡Ganaste! No encuentro más palabras.`; }
+      const botWord = pick(candidates);
+      this.active.used.add(botWord);
+      this.active.lastWord = botWord;
+      return `Mi palabra: **${botWord}**\n\nTu turno: empieza con **${botWord.slice(-1)}**`;
+    }
+    return null;
+  }
+}
+
+/* ---------- CONOCIMIENTO — SEMILLA POR ÁREAS ---------- */
+const KNOWLEDGE = [
+  // ============ IDIOMAS ============
+  {title:'Idioma español', body:'El español es una lengua romance hablada por más de 590 millones de personas. Es oficial en 21 países. Su gramática distingue género y número, y su ortografía es casi fonética. Es la segunda lengua materna más hablada del mundo tras el chino mandarín.', tags:['idioma','español','lengua'], cat:'idiomas'},
+  {title:'Idioma inglés', body:'El inglés es una lengua germánica occidental, hoy la más estudiada como segunda lengua. Es oficial en más de 50 países. Domina el ámbito científico, tecnológico y del comercio internacional. Es el idioma de la aviación y de internet.', tags:['idioma','inglés','lengua'], cat:'idiomas'},
+  {title:'Idioma portugués', body:'El portugués es una lengua romance hablada por más de 260 millones de personas. Es oficial en Portugal, Brasil, Angola, Mozambique, Cabo Verde y otros países. Es la lengua más hablada de Sudamérica.', tags:['idioma','portugués'], cat:'idiomas'},
+  {title:'Idioma francés', body:'El francés es una lengua romance hablada por más de 300 millones de personas. Es idioma oficial en Francia, Canadá (Quebec), Bélgica, Suiza y varios países africanos. Es idioma oficial de la ONU, la UNESCO y el Comité Olímpico.', tags:['idioma','francés'], cat:'idiomas'},
+  {title:'Idioma alemán', body:'El alemán es una lengua germánica hablada por más de 130 millones de personas, principalmente en Alemania, Austria y Suiza. Tiene una rica tradición filosófica, científica y literaria. Sus sustantivos se escriben con mayúscula.', tags:['idioma','alemán'], cat:'idiomas'},
+  {title:'Idioma italiano', body:'El italiano es una lengua romance hablada por unos 85 millones de personas, principalmente en Italia, Suiza y San Marino. Es el idioma del arte, la ópera y la cocina. Su pronunciación es muy fonética.', tags:['idioma','italiano'], cat:'idiomas'},
+  {title:'Alfabeto Fonético Internacional', body:'El AFI (IPA) es un sistema de notación fonética que representa los sonidos de todas las lenguas humanas. Es esencial para estudiar pronunciación y lingüística. Cada símbolo corresponde a un sonido único.', tags:['idioma','fonética','lingüística'], cat:'idiomas'},
+  {title:'Cómo aprender un idioma', body:'Para aprender un idioma: 1) práctica diaria (aunque sean 15 minutos), 2) inmersión (series, música, podcasts), 3) habla desde el principio aunque cometas errores, 4) vocabulario en contexto, no listas aisladas, 5) repetición espaciada (Anki, flashcards), 6) constancia más que intensidad. La fluidez llega con horas de exposición.', tags:['idioma','aprendizaje','consejos'], cat:'idiomas'},
+
+  // ============ BIBLIA / RELIGIÓN ============
+  {title:'La Biblia', body:'La Biblia es el conjunto de textos sagrados del judaísmo y del cristianismo. Se divide en Antiguo Testamento (39 libros en el canon protestante, 46 en el católico) y Nuevo Testamento (27 libros). Fue escrita originalmente en hebreo, arameo y griego a lo largo de más de mil años. Es el libro más traducido y vendido de la historia.', tags:['biblia','religión','cristianismo'], cat:'religión'},
+  {title:'Génesis', body:'Génesis es el primer libro de la Biblia. Narra la creación del mundo, la caída de Adán y Eva, el diluvio de Noé, la torre de Babel y la historia de los patriarcas Abraham, Isaac, Jacob y José. Su nombre significa "origen".', tags:['biblia','génesis','antiguo testamento'], cat:'religión'},
+  {title:'Éxodo', body:'Éxodo es el segundo libro de la Biblia. Narra la liberación del pueblo de Israel de la esclavitud en Egipto, liderada por Moisés, la entrega de los Diez Mandamientos en el Sinaí y la travesía por el desierto.', tags:['biblia','éxodo','moisés'], cat:'religión'},
+  {title:'Los Evangelios', body:'Los cuatro Evangelios canónicos —Mateo, Marcos, Lucas y Juan— narran la vida, enseñanzas, muerte y resurrección de Jesucristo. Mateo, Marcos y Lucas son sinópticos por sus similitudes. Juan tiene un estilo teológico profundo y distinto.', tags:['biblia','evangelios','jesucristo'], cat:'religión'},
+  {title:'Los Diez Mandamientos', body:'Los Diez Mandamientos son principios éticos y religiosos entregados, según el Éxodo, por Dios a Moisés en el monte Sinaí. Ordenan el amor a Dios y al prójimo. Son fundamento moral del judaísmo y del cristianismo.', tags:['biblia','mandamientos','éxodo'], cat:'religión'},
+  {title:'Los Salmos', body:'Los Salmos son 150 poemas y oraciones del Antiguo Testamento, atribuidos en su mayoría al rey David. Expresan alabanza, lamento, gratitud y confianza en Dios. Son parte central de la liturgia judía y cristiana.', tags:['biblia','salmos','david'], cat:'religión'},
+  {title:'Los Proverbios', body:'Proverbios es un libro de sabiduría del Antiguo Testamento, con dichos atribuidos al rey Salomón. Enseña sobre el temor de Dios, la disciplina, la honestidad y las relaciones humanas.', tags:['biblia','proverbios','sabiduría'], cat:'religión'},
+  {title:'El Apocalipsis', body:'El Apocalipsis es el último libro de la Biblia, atribuido a Juan. Contiene visiones simbólicas sobre el fin de los tiempos, la lucha entre el bien y el mal, y la victoria final de Cristo.', tags:['biblia','apocalipsis','nuevo testamento'], cat:'religión'},
+  {title:'Los Reyes de Israel', body:'Los reyes más destacados de Israel: Saúl (primer rey), David (fundador de la dinastía, autor de muchos salmos), Salomón (constructor del Templo, famoso por su sabiduría). Después el reino se dividió en Israel (norte) y Judá (sur).', tags:['biblia','reyes','israel'], cat:'religión'},
+  {title:'Jesucristo', body:'Jesucristo es la figura central del cristianismo. Se cree que nació en Belén, vivió en Nazaret, predicó el Reino de Dios, realizó milagros y fue crucificado en Jerusalén. Los cristianos creen que resucitó al tercer día. Su vida y enseñanzas están en los Evangelios.', tags:['biblia','jesucristo','cristianismo'], cat:'religión'},
+  {title:'Islam', body:'El Islam es una religión monoteísta fundada en el siglo VII por el profeta Mahoma. Su libro sagrado es el Corán. Sus pilares son: la fe (shahada), la oración (salat), la limosna (zakat), el ayuno del Ramadán (sawm) y la peregrinación a La Meca (hach).', tags:['islam','religión','corán'], cat:'religión'},
+  {title:'Budismo', body:'El budismo fue fundado por Siddharta Gautama en el siglo VI a.C. en la India. Sus Cuatro Nobles Verdades enseñan que el sufrimiento existe, tiene causa, puede cesar y hay un camino para lograrlo: el Noble Óctuple Sendero. Busca la iluminación (nirvana).', tags:['budismo','religión','filosofía'], cat:'religión'},
+  {title:'Judaísmo', body:'El judaísmo es la religión monoteísta más antigua de las abrahámicas. Su texto central es la Torá (los cinco primeros libros de la Biblia). Sus principios incluyen la creencia en un Dios único, el cumplimiento de los mandamientos (mitzvot) y la ética social.', tags:['judaísmo','religión','torá'], cat:'religión'},
+  {title:'Hinduismo', body:'El hinduismo es una de las religiones más antiguas del mundo, originada en la India. No tiene un fundador único. Sus textos sagrados incluyen los Vedas, los Upanishads y el Bhagavad Gita. Cree en el karma, el dharma, la reencarnación y la liberación (moksha).', tags:['hinduismo','religión','india'], cat:'religión'},
+
+  // ============ CIENCIA ============
+  {title:'Método científico', body:'El método científico es un procedimiento sistemático para adquirir conocimiento: observación, formulación de hipótesis, experimentación, análisis de resultados y conclusión. Es la base de la ciencia moderna. Una hipótesis debe ser falsable.', tags:['ciencia','método','investigación'], cat:'ciencia'},
+  {title:'Teoría de la relatividad', body:'Formulada por Albert Einstein, la relatividad especial (1905) y general (1915) describen cómo el espacio y el tiempo se curvan por la masa y la energía. Explica la gravedad como geometría del espacio-tiempo. Predijo agujeros negros, ondas gravitacionales y la dilatación del tiempo.', tags:['física','einstein','relatividad'], cat:'ciencia'},
+  {title:'Evolución biológica', body:'La evolución es el cambio en las poblaciones a través de generaciones. Charles Darwin propuso la selección natural en 1859 en "El origen de las especies". Es el principio unificador de la biología moderna. Explica la diversidad de la vida.', tags:['biología','evolución','darwin'], cat:'ciencia'},
+  {title:'ADN', body:'El ADN (ácido desoxirribonucleico) contiene la información genética. Su estructura de doble hélice fue descrita por Watson y Crick en 1953 basándose en los trabajos de Rosalind Franklin. Está formado por cuatro bases: adenina, timina, guanina y citosina.', tags:['biología','adn','genética'], cat:'ciencia'},
+  {title:'Sistema solar', body:'El sistema solar está formado por el Sol y los cuerpos que lo orbitan: 8 planetas (Mercurio, Venus, Tierra, Marte, Júpiter, Saturno, Urano, Neptuno), planetas enanos como Plutón, satélites, asteroides y cometas. Se formó hace unos 4.600 millones de años.', tags:['astronomía','sistema solar','planetas'], cat:'ciencia'},
+  {title:'Fotosíntesis', body:'La fotosíntesis es el proceso por el cual las plantas, algas y algunas bacterias convierten la luz solar, el agua y el CO₂ en glucosa y oxígeno. Ocurre en los cloroplastos gracias a la clorofila. Es la base de casi todas las cadenas alimenticias.', tags:['biología','fotosíntesis','plantas'], cat:'ciencia'},
+  {title:'Cambio climático', body:'El cambio climático es la variación a largo plazo de las temperaturas y patrones climáticos. Está causado principalmente por la emisión de gases de efecto invernadero por actividades humanas desde la revolución industrial. Consecuencias: aumento del nivel del mar, eventos extremos, pérdida de biodiversidad.', tags:['ciencia','clima','medio ambiente'], cat:'ciencia'},
+  {title:'Teoría del Big Bang', body:'El Big Bang es el modelo cosmológico dominante: el universo se originó hace unos 13.800 millones de años a partir de un estado extremadamente denso y caliente, y desde entonces se expande. Evidencias: radiación de fondo de microondas, corrimiento al rojo de galaxias.', tags:['cosmología','big bang','universo'], cat:'ciencia'},
+  {title:'Agujero negro', body:'Un agujero negro es una región del espacio donde la gravedad es tan intensa que nada puede escapar, ni siquiera la luz. Se forma cuando una estrella muy masiva colapsa. El primero fotografiado fue el de la galaxia M87, en 2019.', tags:['astronomía','agujero negro','cosmología'], cat:'ciencia'},
+  {title:'Tabla periódica', body:'La tabla periódica organiza los elementos químicos por número atómico, configuración electrónica y propiedades. Fue creada por Dmitri Mendeléyev en 1869. Tiene 118 elementos confirmados. Los metales están a la izquierda, los no metales a la derecha.', tags:['química','tabla periódica','elementos'], cat:'ciencia'},
+  {title:'Célula', body:'La célula es la unidad básica de la vida. Las procariotas (bacterias) no tienen núcleo; las eucariotas (animales, plantas, hongos) sí. Las células contienen organelos: mitocondrias (energía), ribosomas (proteínas), núcleo (ADN).', tags:['biología','célula','organelos'], cat:'ciencia'},
+  {title:'Vacunas y sistema inmune', body:'Las vacunas entrenan al sistema inmune para reconocer patógenos. Generan memoria inmunológica (linfocitos B y T). Son una de las intervenciones sanitarias más eficaces: erradicaron la viruela y casi la poliomielitis.', tags:['medicina','vacuna','inmunología'], cat:'ciencia'}
+];
+
+/* Continúa KNOWLEDGE */
+KNOWLEDGE.push(
+  // ============ INFORMÁTICA / TECNOLOGÍA ============
+  {title:'JavaScript', body:'JavaScript es un lenguaje de programación interpretado creado por Brendan Eich en 1995. Es el lenguaje principal de la web junto con HTML y CSS. Permite crear interactividad, aplicaciones del lado del servidor con Node.js, apps móviles y de escritorio. Es multiparadigma: funcional, orientado a objetos y basado en prototipos.', tags:['programación','javascript','web'], cat:'informática'},
+  {title:'HTML y CSS', body:'HTML (HyperText Markup Language) estructura el contenido de la web con etiquetas. CSS (Cascading Style Sheets) da estilo y diseño visual. Junto con JavaScript forman la tríada fundamental del desarrollo web.', tags:['programación','html','css'], cat:'informática'},
+  {title:'Inteligencia artificial', body:'La IA es el campo de la informática que busca crear sistemas capaces de tareas que requieren inteligencia humana: aprender, razonar, percibir, comprender lenguaje natural. Incluye machine learning, procesamiento de lenguaje natural (PLN) y visión por computadora. Los grandes modelos de lenguaje (LLM) son su exponente más reciente.', tags:['inteligencia artificial','ia','informática'], cat:'informática'},
+  {title:'Algoritmo', body:'Un algoritmo es una secuencia finita y ordenada de pasos para resolver un problema o realizar una tarea. Los algoritmos son la base de la programación y las matemáticas computacionales. Características: precisión, finitud, definición, entrada y salida.', tags:['programación','algoritmo'], cat:'informática'},
+  {title:'Internet', body:'Internet es la red global de computadoras interconectadas. Se originó en 1969 con ARPANET y evolucionó hasta la web (1989, Tim Berners-Lee). Protocolos clave: TCP/IP, HTTP, DNS. Hoy soporta comunicación, comercio, educación y entretenimiento mundiales.', tags:['internet','tecnología','web'], cat:'informática'},
+  {title:'Git y GitHub', body:'Git es un sistema de control de versiones distribuido creado por Linus Torvalds en 2005. GitHub es una plataforma para alojar repositorios Git, colaborar en proyectos y desplegar sitios como GitHub Pages. Comandos básicos: git init, git add, git commit, git push, git pull.', tags:['git','github','programación'], cat:'informática'},
+  {title:'Bases de datos', body:'Una base de datos es un conjunto organizado de datos almacenados y accesibles electrónicamente. Los tipos principales son relacionales (SQL: MySQL, PostgreSQL) y no relacionales (NoSQL: MongoDB, Redis). IndexedDB es la base de datos del navegador.', tags:['informática','bases de datos','sql'], cat:'informática'},
+  {title:'Python', body:'Python es un lenguaje de programación de alto nivel, interpretado y de propósito general, creado por Guido van Rossum en 1991. Destaca por su sintaxis clara y su uso en ciencia de datos, IA, automatización y desarrollo web. Es uno de los lenguajes más populares del mundo.', tags:['programación','python'], cat:'informática'},
+  {title:'API', body:'Una API (Application Programming Interface) es un conjunto de reglas y definiciones que permite a dos aplicaciones comunicarse. Las APIs REST son las más comunes en la web. Usan HTTP y formatos como JSON o XML.', tags:['programación','api','desarrollo'], cat:'informática'},
+  {title:'Cómo programar', body:'Para aprender a programar: 1) elige un lenguaje (Python o JavaScript son buenos inicios), 2) practica con proyectos pequeños y reales, 3) aprende lógica antes que sintaxis, 4) lee código ajeno, 5) no temas equivocarte: los errores enseñan, 6) comunidad: foros, GitHub, Discord. La programación es un arte que se domina con práctica constante.', tags:['programación','aprendizaje','consejos'], cat:'informática'},
+  {title:'Backend y frontend', body:'El frontend es la parte del sitio que ve el usuario (HTML, CSS, JavaScript, React, Vue). El backend es la lógica del servidor (Node.js, Python, PHP, bases de datos). Un desarrollador full-stack domina ambos.', tags:['programación','web','desarrollo'], cat:'informática'},
+  {title:'Ciberseguridad', body:'La ciberseguridad protege sistemas, redes y datos de ataques digitales. Incluye autenticación fuerte (contraseñas robustas, 2FA), cifrado, actualizaciones, backups y educación del usuario. Los ataques más comunes son phishing, ransomware y fuerza bruta.', tags:['informática','seguridad','tecnología'], cat:'informática'},
+
+  // ============ MATEMÁTICAS ============
+  {title:'Número pi', body:'Pi (π) es la relación entre la longitud de una circunferencia y su diámetro. Vale aproximadamente 3,141592653589... Es irracional y trascendente, fundamental en geometría, trigonometría y física.', tags:['matemáticas','pi','geometría'], cat:'matemáticas'},
+  {title:'Teorema de Pitágoras', body:'En todo triángulo rectángulo, la suma de los cuadrados de los catetos es igual al cuadrado de la hipotenusa: a² + b² = c². Atribuido a Pitágoras de Samos (siglo VI a.C.).', tags:['matemáticas','geometría','pitágoras'], cat:'matemáticas'},
+  {title:'Números primos', body:'Un número primo es un entero mayor que 1 que solo es divisible por 1 y por sí mismo. Los primeros son 2, 3, 5, 7, 11, 13, 17, 19, 23, 29... Son infinitos (Euclides lo demostró) y fundamentales en criptografía (RSA).', tags:['matemáticas','primos'], cat:'matemáticas'},
+  {title:'Álgebra', body:'El álgebra es la rama de las matemáticas que estudia las estructuras, relaciones y cantidades usando letras y símbolos para representar números desconocidos. Permite resolver ecuaciones y modelar situaciones.', tags:['matemáticas','álgebra'], cat:'matemáticas'},
+  {title:'Cálculo', body:'El cálculo estudia el cambio y el movimiento. Se divide en cálculo diferencial (derivadas, tasas de cambio) e integral (áreas, acumulación). Fue desarrollado por Newton y Leibniz en el siglo XVII.', tags:['matemáticas','cálculo','derivadas'], cat:'matemáticas'},
+  {title:'Estadística', body:'La estadística es la ciencia de recolectar, analizar e interpretar datos. Se divide en descriptiva (resumir datos: media, mediana, moda) e inferencial (sacar conclusiones de una muestra sobre una población). Es clave en ciencia, negocios y política.', tags:['matemáticas','estadística','datos'], cat:'matemáticas'},
+  {title:'Probabilidad', body:'La probabilidad mide la posibilidad de que ocurra un evento. Va de 0 (imposible) a 1 (seguro). La probabilidad de un evento es el número de casos favorables entre casos posibles. Fundamental en estadística, física y juegos de azar.', tags:['matemáticas','probabilidad'], cat:'matemáticas'},
+
+  // ============ FINANZAS ============
+  {title:'Inflación', body:'La inflación es el aumento sostenido del nivel general de precios. Reduce el poder adquisitivo del dinero. Se mide con el índice de precios al consumidor (IPC). Los bancos centrales suben las tasas de interés para controlarla.', tags:['finanzas','inflación','economía'], cat:'finanzas'},
+  {title:'Interés compuesto', body:'El interés compuesto se calcula sobre el capital inicial y los intereses acumulados. Fórmula: A = P(1 + r/n)^(nt). Albert Einstein lo llamó "la octava maravilla del mundo". Es clave en inversiones y ahorro a largo plazo.', tags:['finanzas','interés','inversión'], cat:'finanzas'},
+  {title:'PIB', body:'El Producto Interior Bruto (PIB) es el valor monetario total de bienes y servicios finales producidos en un país durante un periodo. Es el indicador más usado para medir el tamaño de una economía. Se calcula como C + I + G + (X - M).', tags:['finanzas','pib','economía'], cat:'finanzas'},
+  {title:'Oferta y demanda', body:'La oferta y la demanda son las dos fuerzas que determinan el precio y la cantidad de bienes en un mercado. Cuando la demanda sube y la oferta no, los precios tienden a subir. Cuando la oferta supera la demanda, bajan. Su equilibrio fija el precio de mercado.', tags:['economía','mercado'], cat:'finanzas'},
+  {title:'Ahorro e inversión', body:'El ahorro es la parte del ingreso no consumida. La inversión es la colocación del dinero con la expectativa de obtener rendimiento. La diversificación reduce el riesgo. Opciones: cuentas de ahorro, fondos indexados, bonos, bienes raíces, acciones.', tags:['finanzas','ahorro','inversión'], cat:'finanzas'},
+  {title:'Cómo hacer un presupuesto', body:'Un presupuesto personal sano sigue la regla 50/30/20: 50% para necesidades (vivienda, comida, transporte), 30% para gustos, 20% para ahorro e inversión. Registra ingresos y gastos, prioriza deudas de alto interés, automatiza el ahorro.', tags:['finanzas','presupuesto','consejos'], cat:'finanzas'},
+
+  // ============ MEDICINA ============
+  {title:'Corazón humano', body:'El corazón es un músculo del tamaño de un puño que bombea sangre por todo el cuerpo. Late entre 60 y 100 veces por minuto en reposo. Tiene cuatro cavidades: dos aurículas y dos ventrículos. El ejercicio y la dieta mediterránea lo cuidan.', tags:['medicina','anatomía','corazón'], cat:'medicina'},
+  {title:'Vacunación', body:'La vacuna estimula al sistema inmunológico para producir defensas contra un patógeno sin causar la enfermedad. Es una de las intervenciones de salud pública más eficaces de la historia: erradicó la viruela y casi la poliomielitis.', tags:['medicina','vacuna','salud'], cat:'medicina'},
+  {title:'Primeros auxilios', body:'Ante una emergencia: 1) evalúa el entorno, 2) llama a emergencias, 3) verifica consciencia y respiración, 4) si no respira, inicia RCP (compresiones 100-120/min), 5) controla hemorragias con presión directa. No muevas a un accidentado salvo peligro inminente.', tags:['medicina','primeros auxilios','emergencia'], cat:'medicina'},
+  {title:'Sistema inmunológico', body:'El sistema inmunológico defiende al cuerpo de infecciones. Incluye barreras físicas (piel), inmunidad innata (respuesta rápida e inespecífica) y adaptativa (linfocitos B y T, memoria). Las vacunas entrenan la inmunidad adaptativa.', tags:['medicina','inmunología','salud'], cat:'medicina'},
+  {title:'Diabetes', body:'La diabetes es una enfermedad crónica en la que el cuerpo no produce o no usa bien la insulina, lo que eleva la glucosa en sangre. Tipos: 1 (autoinmune), 2 (resistencia a la insulina) y gestacional. Se maneja con dieta, ejercicio, medicación y control glucémico.', tags:['medicina','diabetes','salud'], cat:'medicina'},
+  {title:'Salud mental', body:'La salud mental incluye bienestar emocional, psicológico y social. Incluye el manejo del estrés, relaciones sanas y autocuidado. Buscar ayuda profesional no es debilidad. Trastornos comunes: ansiedad, depresión, estrés postraumático. Hábitos saludables: sueño, ejercicio, conexión social.', tags:['medicina','salud mental','psicología'], cat:'medicina'},
+
+  // ============ LEYES ============
+  {title:'Constitución', body:'La constitución es la norma fundamental de un Estado. Define su organización, los derechos y deberes de los ciudadanos y los límites del poder. Está por encima de las demás leyes.', tags:['leyes','constitución','derecho'], cat:'leyes'},
+  {title:'Derechos humanos', body:'Los derechos humanos son garantías inherentes a toda persona sin distinción. La Declaración Universal de 1948 recoge derechos civiles, políticos, económicos, sociales y culturales: vida, libertad, igualdad, educación, salud, trabajo.', tags:['leyes','derechos humanos','onu'], cat:'leyes'},
+  {title:'División de poderes', body:'La división de poderes es un principio según el cual el poder del Estado se reparte entre ejecutivo, legislativo y judicial para evitar abusos. Fue formulada por Montesquieu en "El espíritu de las leyes" (1748).', tags:['leyes','poderes','estado'], cat:'leyes'},
+  {title:'Contratos', body:'Un contrato es un acuerdo de voluntades que crea obligaciones entre las partes. Requisitos: consentimiento, objeto lícito y causa lícita. Los contratos pueden ser verbales o escritos, según la ley de cada país.', tags:['leyes','contratos','derecho civil'], cat:'leyes'},
+
+  // ============ HISTORIA ============
+  {title:'Segunda Guerra Mundial', body:'Fue un conflicto global (1939-1945) entre los Aliados (Reino Unido, URSS, EE.UU., Francia, China y otros) y las Potencias del Eje (Alemania, Italia, Japón). Terminó con la rendición de Alemania y Japón. Fue el conflicto más mortífero de la historia (~70-85 millones de muertos).', tags:['historia','guerra','siglo xx'], cat:'historia'},
+  {title:'Revolución Francesa', body:'Ocurrió entre 1789 y 1799 en Francia. Derrocó la monarquía absoluta, proclamó los ideales de libertad, igualdad y fraternidad, e influyó en el mundo entero. Su inicio se marca con la toma de la Bastilla (14 de julio de 1789).', tags:['historia','francia','revolución'], cat:'historia'},
+  {title:'Cristóbal Colón', body:'Navegante genovés (1451-1506) que al servicio de los Reyes Católicos llegó a América en 1492. Abrió el proceso de exploración y colonización europea del continente. Murió sin saber que había llegado a un "nuevo mundo".', tags:['historia','colón','américa'], cat:'historia'},
+  {title:'Imperio romano', body:'El Imperio romano (27 a.C. - 476 d.C. en Occidente) fue una de las civilizaciones más influyentes de la historia. Su legado incluye el derecho, el latín, la arquitectura, las calzadas y la difusión del cristianismo. Su caída marca el inicio de la Edad Media.', tags:['historia','roma','antigüedad'], cat:'historia'},
+  {title:'Independencia de América Latina', body:'Entre 1810 y 1825, la mayoría de las colonias españolas en América lograron su independencia. Figuras clave: Simón Bolívar, José de San Martín, Miguel Hidalgo, Bernardo O\'Higgins. Inspirados por la Ilustración y las revoluciones estadounidense y francesa.', tags:['historia','independencia','latinoamérica'], cat:'historia'},
+  {title:'Antigua Grecia', body:'La Antigua Grecia (siglos VIII-IV a.C.) fue cuna de la democracia, la filosofía (Sócrates, Platón, Aristóteles), el teatro, los Juegos Olímpicos y la ciencia. Ciudades-estado como Atenas y Esparta dominaron la política. Su legado es la base de la cultura occidental.', tags:['historia','grecia','antigüedad'], cat:'historia'},
+
+  // ============ ARTE Y LITERATURA ============
+  {title:'Mona Lisa', body:'La Gioconda o Mona Lisa es un retrato pintado por Leonardo da Vinci entre 1503 y 1519. Es la pintura más famosa del mundo y se exhibe en el Museo del Louvre (París). Destaca por su técnica del sfumato y su enigmática sonrisa.', tags:['arte','leonardo','pintura'], cat:'arte'},
+  {title:'Miguel de Cervantes', body:'Escritor español (1547-1616), autor de "El ingenioso hidalgo don Quijote de la Mancha", considerada la primera novela moderna. Es una de las figuras más importantes de la literatura universal.', tags:['literatura','cervantes','españa'], cat:'literatura'},
+  {title:'William Shakespeare', body:'Dramaturgo y poeta inglés (1564-1616), autor de "Hamlet", "Macbeth", "Romeo y Julieta" y "El rey Lear". Es el autor más influyente de la literatura inglesa y universal.', tags:['literatura','shakespeare','teatro'], cat:'literatura'},
+  {title:'Realismo mágico', body:'El realismo mágico es un movimiento literario latinoamericano del siglo XX que mezcla lo fantástico con lo cotidiano. Autores: Gabriel García Márquez ("Cien años de soledad"), Isabel Allende, Julio Cortázar, Jorge Luis Borges.', tags:['literatura','realismo mágico','latinoamérica'], cat:'literatura'},
+  {title:'Vincent van Gogh', body:'Pintor neerlandés (1853-1890), uno de los más influyentes del postimpresionismo. Obras famosas: "La noche estrellada", "Los girasoles", "Autorretrato con oreja vendada". Vendió solo un cuadro en vida y hoy es uno de los artistas más cotizados.', tags:['arte','van gogh','pintura'], cat:'arte'},
+  {title:'Pablo Picasso', body:'Pintor y escultor español (1881-1973), creador del cubismo junto a Georges Braque. Obra cumbre: "Guernica". Es uno de los artistas más prolíficos y cotizados de la historia.', tags:['arte','picasso','cubismo'], cat:'arte'},
+
+  // ============ MÚSICA ============
+  {title:'Ludwig van Beethoven', body:'Compositor alemán (1770-1827), figura clave del clasicismo y el romanticismo. Compuso 9 sinfonías (la Quinta y la Novena son icónicas), sonatas, cuartetos y óperas. Compuso gran parte de su obra estando ya sordo.', tags:['música','beethoven','clásica'], cat:'música'},
+  {title:'Música', body:'La música es una forma de arte que combina sonidos y silencios a lo largo del tiempo. Sus elementos son melodía, armonía, ritmo, timbre y dinámica. Acompaña a la humanidad desde la prehistoria y tiene efectos positivos documentados sobre el ánimo y la cognición.', tags:['música','arte','cultura'], cat:'música'},
+  {title:'The Beatles', body:'The Beatles fue una banda británica de rock formada en Liverpool en 1960 por John Lennon, Paul McCartney, George Harrison y Ringo Starr. Es considerada la banda más influyente de la historia de la música popular.', tags:['música','beatles','rock'], cat:'música'},
+  {title:'Géneros musicales', body:'Algunos géneros musicales: clásica, jazz, blues, rock, pop, hip-hop, reggae, salsa, cumbia, tango, flamenco, electrónica, country, metal, ópera, folklore latinoamericano.', tags:['música','géneros','cultura'], cat:'música'},
+
+  // ============ JUEGOS / DEPORTES ============
+  {title:'Ajedrez', body:'El ajedrez es un juego de estrategia para dos personas sobre un tablero de 8x8 casillas. Se originó en la India (siglo VI, chaturanga) y evolucionó a través de Persia y Europa. El objetivo es dar jaque mate al rey del oponente. Piezas: rey, dama, torres, alfiles, caballos, peones.', tags:['juegos','ajedrez','estrategia'], cat:'juegos'},
+  {title:'Videojuegos', body:'Los videojuegos nacieron en los años 50-60. "Pong" (1972) popularizó la industria. Hoy es la mayor industria del entretenimiento mundial, con consolas, PC y móviles.', tags:['videojuegos','tecnología','juegos'], cat:'juegos'},
+  {title:'Fútbol', body:'El fútbol es el deporte más popular del mundo, con más de 4.000 millones de aficionados. Se juega entre dos equipos de 11 jugadores con un balón esférico. El Mundial de la FIFA es el evento deportivo más visto del planeta.', tags:['deportes','fútbol','juegos'], cat:'juegos'},
+  {title:'Baloncesto', body:'El baloncesto fue inventado por James Naismith en 1891. Se juega entre dos equipos de 5 jugadores. La NBA es la liga más prestigiosa del mundo.', tags:['deportes','baloncesto'], cat:'juegos'},
+  {title:'Juegos de mesa', body:'Juegos de mesa populares: ajedrez, damas, monopoly, scrabble, parchís, dominó, cartas (póker, bridge, mus), Catan, Carcassonne, Risk, Cluedo.', tags:['juegos','mesa','entretenimiento'], cat:'juegos'},
+
+  // ============ GEOGRAFÍA ============
+  {title:'Océanos', body:'Existen cinco océanos: Pacífico, Atlántico, Índico, Antártico y Ártico. Cubren el 71% de la superficie terrestre. El Pacífico es el más grande y profundo (fosa de las Marianas, 11.000 m).', tags:['geografía','océanos','tierra'], cat:'geografía'},
+  {title:'Amazonas', body:'El río Amazonas es el más caudaloso del mundo y el segundo más largo. Su cuenca alberga la mayor selva tropical del planeta, con una biodiversidad incomparable y un papel crucial en el clima global.', tags:['geografía','amazonas','naturaleza'], cat:'geografía'},
+  {title:'Países y capitales', body:'Capitales destacadas: México DF (México), Buenos Aires (Argentina), Brasilia (Brasil), Madrid (España), París (Francia), Roma (Italia), Berlín (Alemania), Londres (Reino Unido), Tokio (Japón), Pekín (China), Washington D.C. (EE.UU.), Ottawa (Canadá), Canberra (Australia), Caracas (Venezuela), Bogotá (Colombia), Lima (Perú), Santiago (Chile).', tags:['geografía','capitales','países'], cat:'geografía'},
+  {title:'Continentes', body:'Existen 6 continentes según el modelo más extendido en español: África, América, Antártida, Asia, Europa y Oceanía. Algunos modelos consideran América como dos continentes (del Norte y del Sur) y otros incluyen la Antártida como parte de América u Oceanía según la escuela.', tags:['geografía','continentes'], cat:'geografía'},
+
+  // ============ FILOSOFÍA ============
+  {title:'Sócrates', body:'Filósofo griego (470-399 a.C.), maestro de Platón. No dejó escritos; lo conocemos por sus discípulos. Su método, la mayéutica, consistía en guiar al interlocutor a través de preguntas hacia el conocimiento. Fue condenado a muerte en Atenas.', tags:['filosofía','sócrates','grecia'], cat:'filosofía'},
+  {title:'Filosofía', body:'La filosofía es el estudio racional de cuestiones fundamentales sobre la existencia, el conocimiento, la ética, la mente, el lenguaje y la realidad. Sus ramas principales son la metafísica, la epistemología, la lógica, la ética y la estética.', tags:['filosofía','pensamiento'], cat:'filosofía'},
+  {title:'Estoicismo', body:'El estoicismo es una escuela filosófica fundada por Zenón de Citio (s. III a.C.). Enseña a distinguir lo que depende de nosotros (juicios, acciones) de lo que no (externos), y a vivir con virtud y serenidad. Séneca, Epicteto y Marco Aurelio son sus grandes exponentes.', tags:['filosofía','estoicismo','virtud'], cat:'filosofía'},
+  {title:'Ética', body:'La ética es la rama de la filosofía que estudia la moral, el deber ser y las acciones correctas. Corrientes: virtud (Aristóteles), utilitarismo (Mill), deontología (Kant), ética del cuidado. Busca principios para vivir bien y convivir.', tags:['filosofía','ética','moral'], cat:'filosofía'},
+
+  // ============ POLÍTICA ============
+  {title:'Democracia', body:'La democracia es una forma de gobierno en la que el poder reside en el pueblo, que lo ejerce directamente o mediante representantes elegidos. Sus pilares son elecciones libres, separación de poderes, respeto a los derechos y Estado de derecho.', tags:['política','democracia','gobierno'], cat:'política'},
+  {title:'Estado de derecho', body:'El Estado de derecho es un principio según el cual todos —ciudadanos y gobernantes— están sujetos a la ley. Requiere leyes justas, aplicación imparcial, separación de poderes y respeto a los derechos fundamentales.', tags:['política','derecho','estado'], cat:'política'},
+
+  // ============ CULTURA / GENERAL ============
+  {title:'Emojis', body:'Los emojis son pictogramas digitales usados en comunicación electrónica. Nacieron en Japón en 1999 (Shigetaka Kurita). Hoy el estándar Unicode recoge más de 3.600. Cada emoji tiene un nombre oficial en inglés.', tags:['emoji','cultura','comunicación'], cat:'cultura'},
+  {title:'Empatía', body:'La empatía es la capacidad de comprender y compartir los sentimientos de otra persona. Se distinguen empatía cognitiva (entender) y afectiva (sentir). Es fundamental en las relaciones humanas y en la inteligencia emocional.', tags:['psicología','empatía','emociones'], cat:'psicología'},
+  {title:'Inteligencia emocional', body:'La inteligencia emocional es la capacidad de reconocer, comprender y gestionar las propias emociones y las de los demás. Daniel Goleman la popularizó en 1995. Incluye autoconciencia, autorregulación, motivación, empatía y habilidades sociales.', tags:['psicología','emociones','inteligencia'], cat:'psicología'},
+  {title:'Cocina del mundo', body:'La cocina del mundo incluye tradiciones como la mediterránea (aceite de oliva, pescado, verduras), la asiática (arroz, soja, especias), la mexicana (maíz, chile, frijol), la india (curry, especias), la francesa (mantequilla, vino, quesos). La UNESCO reconoce varias como patrimonio inmaterial.', tags:['cultura','cocina','gastronomía'], cat:'cultura'},
+  {title:'Días festivos', body:'Festividades destacadas: Navidad (25 dic), Año Nuevo (1 ene), Semana Santa (fecha variable), Día de la Madre (fechas variables), Día del Padre, Día Internacional de la Mujer (8 mar), Día del Trabajo (1 may), Día de los Muertos (México, 1-2 nov), Acción de Gracias (EE.UU., 4º jueves nov).', tags:['cultura','festividades','calendario'], cat:'cultura'},
+  {title:'La amistad', body:'La amistad es una relación afectiva entre dos o más personas basada en confianza, respeto mutuo, lealtad y afecto. Se cultiva con tiempo, escucha y reciprocidad. Es uno de los pilares del bienestar emocional según estudios de Harvard.', tags:['cultura','relaciones','psicología'], cat:'cultura'},
+  {title:'El amor', body:'El amor es un sentimiento complejo de afecto, atracción y cuidado hacia otra persona. Los griegos distinguían: eros (romántico), filia (amistad), ágape (incondicional), storgē (familiar). Las relaciones sanas se basan en respeto, comunicación y reciprocidad.', tags:['cultura','emociones','relaciones'], cat:'cultura'}
+);
+
+/* ==========================================================
+   PARTE 8 — EMOJIS con nombre oficial Unicode
+   ~460 emojis organizados por categoría.
+   Estructura: EMOJIS.byName (nombre→emoji), EMOJIS.byEmoji (emoji→nombre), EMOJIS.names
+   ========================================================== */
+const EMOJIS = (() => {
+  const byName = {
+    // ---------- CARAS Y EMOCIONES (72) ----------
+    'grinning face':'😀','grinning face with big eyes':'😃','grinning face with smiling eyes':'😄',
+    'beaming face with smiling eyes':'😁','grinning squinting face':'😆','grinning face with sweat':'😅',
+    'rolling on the floor laughing':'🤣','face with tears of joy':'😂','slightly smiling face':'🙂',
+    'upside-down face':'🙃','winking face':'😉','smiling face with smiling eyes':'😊',
+    'smiling face with halo':'😇','smiling face with hearts':'🥰','smiling face with heart-eyes':'😍',
+    'star-struck':'🤩','face blowing a kiss':'😘','kissing face':'😗','smiling face':'☺️',
+    'kissing face with closed eyes':'😚','kissing face with smiling eyes':'😙','face savoring food':'😋',
+    'face with tongue':'😛','winking face with tongue':'😜','zany face':'🤪','squinting face with tongue':'😝',
+    'money-mouth face':'🤑','hugging face':'🤗','face with hand over mouth':'🤭','shushing face':'🤫',
+    'thinking face':'🤔','zipper-mouth face':'🤐','face with raised eyebrow':'🤨','neutral face':'😐',
+    'expressionless face':'😑','face without mouth':'😶','smirking face':'😏','unamused face':'😒',
+    'face with rolling eyes':'🙄','grimacing face':'😬','lying face':'🤥','relieved face':'😌',
+    'pensive face':'😔','sleepy face':'😪','drooling face':'🤤','sleeping face':'😴',
+    'face with medical mask':'😷','face with thermometer':'🤒','face with head-bandage':'🤕',
+    'nauseated face':'🤢','vomiting face':'🤮','sneezing face':'🤧','hot face':'🥵','cold face':'🥶',
+    'woozy face':'🥴','dizzy face':'😵','exploding head':'🤯','cowboy hat face':'🤠','partying face':'🥳',
+    'smiling face with sunglasses':'😎','nerd face':'🤓','face with monocle':'🧐','confused face':'😕',
+    'worried face':'😟','slightly frowning face':'🙁','frowning face':'☹️','face with open mouth':'😮',
+    'hushed face':'😯','astonished face':'😲','flushed face':'😳','pleading face':'🥺',
+    'frowning face with open mouth':'😦','anguished face':'😧','fearful face':'😨','anxious face with sweat':'😰',
+    'sad but relieved face':'😥','crying face':'😢','loudly crying face':'😭','face screaming in fear':'😱',
+    'confounded face':'😖','persevering face':'😣','disappointed face':'😞','downcast face with sweat':'😓',
+    'weary face':'😩','tired face':'😫','yawning face':'🥱','face with steam from nose':'😤',
+    'pouting face':'😡','angry face':'😠','face with symbols on mouth':'🤬','smiling face with horns':'😈',
+    'angry face with horns':'👿','skull':'💀','pile of poo':'💩','clown face':'🤡','ogre':'👹','goblin':'👺',
+    'ghost':'👻','alien':'👽','robot':'🤖',
+
+    // ---------- GATOS Y ANIMALES DOMÉSTICOS (30) ----------
+    'cat face':'🐱','dog face':'🐶','mouse face':'🐭','hamster':'🐹','rabbit':'🐰','fox':'🦊','bear':'🐻',
+    'panda':'🐼','koala':'🐨','tiger':'🐯','lion':'🦁','cow face':'🐮','pig face':'🐷','frog':'🐸',
+    'monkey face':'🐵','chicken':'🐔','penguin':'🐧','bird':'🐦','baby chick':'🐤','duck':'🦆',
+    'eagle':'🦅','owl':'🦉','bat':'🦇','wolf':'🐺','boar':'🐗','horse face':'🐴','unicorn':'🦄',
+
+    // ---------- INSECTOS Y ANIMALES PEQUEÑOS (12) ----------
+    'bee':'🐝','bug':'🐛','butterfly':'🦋','snail':'🐌','lady beetle':'🐞','ant':'🐜','spider':'🕷️',
+    'scorpion':'🦂','turtle':'🐢','snake':'🐍','lizard':'🦎','worm':'🪱',
+
+    // ---------- ANIMALES MARINOS (14) ----------
+    'octopus':'🐙','squid':'🦑','shrimp':'🦐','lobster':'🦞','crab':'🦀','blowfish':'🐡',
+    'tropical fish':'🐠','fish':'🐟','dolphin':'🐬','whale':'🐳','shark':'🦈','crocodile':'🐊',
+    'seal':'🦭','otter':'🦦',
+
+    // ---------- ANIMALES SALVAJES (14) ----------
+    'leopard':'🐆','zebra':'🦓','gorilla':'🦍','elephant':'🐘','rhinoceros':'🦏','camel':'🐫',
+    'two-hump camel':'🐪','giraffe':'🦒','kangaroo':'🦘','sloth':'🦥','skunk':'🦨','badger':'🦡',
+    'beaver':'🦫','hedgehog':'🦔',
+
+    // ---------- CORAZONES Y AMOR (20) ----------
+    'red heart':'❤️','orange heart':'🧡','yellow heart':'💛','green heart':'💚','blue heart':'💙',
+    'purple heart':'💜','black heart':'🖤','white heart':'🤍','brown heart':'🤎','broken heart':'💔',
+    'heart exclamation':'❣️','two hearts':'💕','revolving hearts':'💞','beating heart':'💓',
+    'growing heart':'💗','sparkling heart':'💖','heart with arrow':'💘','heart with ribbon':'💝',
+    'kiss mark':'💋','love letter':'💌',
+
+    // ---------- SÍMBOLOS DE EXPRESIÓN (15) ----------
+    'hundred points':'💯','anger symbol':'💢','collision':'💥','dizzy':'💫','sweat droplets':'💦',
+    'dashing away':'💨','hole':'🕳️','bomb':'💣','speech balloon':'💬','thought balloon':'💭',
+    'zzz':'💤','eye in speech bubble':'👁️‍🗨️','left speech bubble':'🗨️','right anger bubble':'🗯️',
+    'anger bubble':'🗯️',
+
+    // ---------- MANOS Y GESTOS (40) ----------
+    'waving hand':'👋','raised back of hand':'🤚','raised hand':'✋','vulcan salute':'🖖',
+    'ok hand':'👌','pinched fingers':'🤌','pinching hand':'🤏','victory hand':'✌️',
+    'crossed fingers':'🤞','love-you gesture':'🤟','sign of the horns':'🤘','call me hand':'🤙',
+    'backhand index pointing left':'👈','backhand index pointing right':'👉',
+    'backhand index pointing up':'👆','backhand index pointing down':'👇','index pointing up':'☝️',
+    'thumbs up':'👍','thumbs down':'👎','raised fist':'✊','oncoming fist':'👊',
+    'left-facing fist':'🤛','right-facing fist':'🤜','clapping hands':'👏','raising hands':'🙌',
+    'open hands':'👐','palms up together':'🤲','handshake':'🤝','folded hands':'🙏',
+    'writing hand':'✍️','nail polish':'💅','selfie':'🤳','flexed biceps':'💪','mechanical arm':'🦾',
+    'mechanical leg':'🦿','leg':'🦵','foot':'🦶','ear':'👂','nose':'👃',
+
+    // ---------- CUERPO Y SALUD (12) ----------
+    'brain':'🧠','anatomical heart':'🫀','lungs':'🫁','tooth':'🦷','bone':'🦴','eyes':'👀',
+    'eye':'👁️','tongue':'👅','mouth':'👄','ear with hearing aid':'🦻','footprints':'👣','fingerprint':'🫆',
+
+    // ---------- PERSONAS Y FAMILIA (18) ----------
+    'baby':'👶','child':'🧒','boy':'👦','girl':'👧','person':'🧑','man':'👨','woman':'👩',
+    'older person':'🧓','old man':'👴','old woman':'👵','person with crown':'🫅','prince':'🤴',
+    'princess':'👸','person in tuxedo':'🤵','person with veil':'👰','pregnant woman':'🤰',
+    'breastfeeding':'🤱','family':'👨‍👩‍👧',
+
+    // ---------- NATURALEZA Y CLIMA (30) ----------
+    'sun':'☀️','full moon':'🌕','new moon':'🌑','crescent moon':'🌙','star':'⭐','glowing star':'🌟',
+    'sparkles':'✨','zap':'⚡','fire':'🔥','snowflake':'❄️','rainbow':'🌈','cloud':'☁️',
+    'sun behind cloud':'⛅','cloud with rain':'🌧️','cloud with snow':'🌨️','cloud with lightning':'🌩️',
+    'umbrella':'☂️','umbrella with rain drops':'☔','tornado':'🌪️','fog':'🌫️','droplet':'💧',
+    'ocean':'🌊','comet':'☄️','sunrise':'🌅','sunset':'🌇','sunrise over mountains':'🌄',
+    'cityscape at dusk':'🌆','night with stars':'🌃','milky way':'🌌','shooting star':'🌠',
+
+    // ---------- PLANTAS Y FLORES (20) ----------
+    'christmas tree':'🎄','palm tree':'🌴','cactus':'🌵','maple leaf':'🍁','fallen leaf':'🍂',
+    'leaf fluttering in wind':'🍃','rose':'🌹','sunflower':'🌻','tulip':'🌷','cherry blossom':'🌸',
+    'hibiscus':'🌺','blossom':'🌼','bouquet':'💐','wilted flower':'🥀','rosette':'🏵️',
+    'seedling':'🌱','herb':'🌿','four leaf clover':'🍀','mushroom':'🍄','sheaf of rice':'🌾',
+
+    // ---------- FRUTAS Y VERDURAS (30) ----------
+    'apple':'🍎','green apple':'🍏','banana':'🍌','grapes':'🍇','strawberry':'🍓','watermelon':'🍉',
+    'orange':'🍊','lemon':'🍋','peach':'🍑','cherries':'🍒','pineapple':'🍍','mango':'🥭',
+    'kiwi fruit':'🥝','tomato':'🍅','coconut':'🥥','avocado':'🥑','eggplant':'🍆','potato':'🥔',
+    'carrot':'🥕','ear of corn':'🌽','hot pepper':'🌶️','cucumber':'🥒','leafy green':'🥬',
+    'broccoli':'🥦','garlic':'🧄','onion':'🧅','peanuts':'🥜','chestnut':'🌰','olive':'🫒',
+    'beans':'🫘',
+
+    // ---------- COMIDA PREPARADA (30) ----------
+    'pizza':'🍕','hamburger':'🍔','fries':'🍟','hot dog':'🌭','taco':'🌮','burrito':'🌯',
+    'sushi':'🍣','ramen':'🍜','rice':'🍚','bread':'🍞','croissant':'🥐','baguette bread':'🥖',
+    'pretzel':'🥨','bagel':'🥯','pancakes':'🥞','waffle':'🧇','cheese wedge':'🧀','meat on bone':'🍖',
+    'poultry leg':'🍗','bacon':'🥓','spaghetti':'🍝','curry rice':'🍛','bento box':'🍱',
+    'dumpling':'🥟','fortune cookie':'🥠','takeout box':'🥡','falafel':'🧆','stuffed flatbread':'🥙',
+    'shallow pan of food':'🥘','pot of food':'🍲',
+
+    // ---------- BEBIDAS Y POSTRES (24) ----------
+    'coffee':'☕','tea':'🍵','beer':'🍺','beer mug':'🍻','wine':'🍷','champagne':'🍾','cocktail':'🍸',
+    'tropical drink':'🍹','sake':'🍶','milk':'🥛','baby bottle':'🍼','hot beverage':'☕',
+    'birthday cake':'🎂','cake':'🍰','cupcake':'🧁','chocolate':'🍫','candy':'🍬','lollipop':'🍭',
+    'ice cream':'🍦','soft ice cream':'🍦','doughnut':'🍩','cookie':'🍪','popcorn':'🍿',
+    'honey pot':'🍯',
+
+    // ---------- DEPORTES (30) ----------
+    'soccer ball':'⚽','basketball':'🏀','american football':'🏈','baseball':'⚾','softball':'🥎',
+    'tennis':'🎾','volleyball':'🏐','rugby football':'🏉','eight ball':'🎱','ping pong':'🏓',
+    'badminton':'🏸','ice hockey':'🏒','field hockey':'🏑','lacrosse':'🥍','cricket game':'🏏',
+    'goal net':'🥅','golf':'⛳','bow and arrow':'🏹','fishing pole':'🎣','boxing glove':'🥊',
+    'martial arts uniform':'🥋','running shirt':'🎽','skis':'🎿','sled':'🛷','curling stone':'🥌',
+    'dart':'🎯','yo-yo':'🪀','kite':'🪁','flying disc':'🥏','skateboard':'🛹',
+
+    // ---------- JUEGOS Y ENTRETENIMIENTO (14) ----------
+    'video game':'🎮','joystick':'🕹️','game die':'🎲','jigsaw':'🧩','teddy bear':'🧸',
+    'chess pawn':'♟️','spade suit':'♠️','heart suit':'♥️','diamond suit':'♦️','club suit':'♣️',
+    'mahjong red dragon':'🀄','flower playing cards':'🎴','performing arts':'🎭','framed picture':'🖼️',
+
+    // ---------- FORMAS Y SÍMBOLOS (30) ----------
+    'red circle':'🔴','orange circle':'🟠','yellow circle':'🟡','green circle':'🟢','blue circle':'🔵',
+    'purple circle':'🟣','brown circle':'🟤','black circle':'⚫','white circle':'⚪',
+    'red square':'🟥','orange square':'🟧','yellow square':'🟨','green square':'🟩','blue square':'🟦',
+    'purple square':'🟪','brown square':'🟫','black square':'⬛','white square':'⬜',
+    'red triangle pointed up':'🔺','red triangle pointed down':'🔻','blue diamond':'🔹',
+    'small orange diamond':'🔸','check mark button':'✅','check mark':'✔️','cross mark':'❌',
+    'cross mark button':'❎','question mark':'❓','exclamation mark':'❗','warning':'⚠️',
+    'no entry':'⛔',
+
+    // ---------- SEÑALES Y ADVERTENCIAS (10) ----------
+    'prohibited':'🚫','recycling symbol':'♻️','hourglass done':'⌛','hourglass not done':'⏳',
+    'watch':'⌚','alarm clock':'⏰','stopwatch':'⏱️','timer clock':'⏲️','bell':'🔔',
+    'bell with slash':'🔕',
+
+    // ---------- LUGARES Y GEOGRAFÍA (30) ----------
+    'globe showing Europe-Africa':'🌍','globe showing Americas':'🌎','globe showing Asia-Australia':'🌏',
+    'house':'🏠','house with garden':'🏡','office building':'🏢','hospital':'🏥','bank':'🏦',
+    'hotel':'🏨','school':'🏫','church':'⛪','mosque':'🕌','synagogue':'🕍','kaaba':'🕋',
+    'statue of liberty':'🗽','mount fuji':'🗻','sunrise over mountains':'🌄','fountain':'⛲',
+    'ferris wheel':'🎡','roller coaster':'🎢','map':'🗺️','compass':'🧭','mountain':'⛰️',
+    'volcano':'🌋','desert':'🏜️','beach with umbrella':'🏖️','national park':'🏞️','stadium':'🏟️',
+    'camping':'🏕️','castle':'🏰',
+
+    // ---------- TRANSPORTE (24) ----------
+    'train':'🚂','metro':'🚇','taxi':'🚕','bus':'🚌','truck':'🚚','car':'🚗','racing car':'🏎️',
+    'police car':'🚓','ambulance':'🚑','fire engine':'🚒','bicycle':'🚲','motorcycle':'🏍️',
+    'airplane':'✈️','rocket':'🚀','helicopter':'🚁','boat':'⛵','ship':'🚢','anchor':'⚓',
+    'fuel pump':'⛽','traffic light':'🚦','construction':'🚧','vertical traffic light':'🚥',
+    'locomotive':'🚂','sailboat':'⛵',
+
+    // ---------- DINERO Y FINANZAS (12) ----------
+    'money bag':'💰','dollar banknote':'💵','euro banknote':'💶','pound banknote':'💷',
+    'yen banknote':'💴','credit card':'💳','gem stone':'💎','money with wings':'💸',
+    'chart increasing':'📈','chart decreasing':'📉','bar chart':'📊','coin':'🪙',
+
+    // ---------- OFICINA Y PAPELERÍA (20) ----------
+    'clipboard':'📋','file folder':'📁','open file folder':'📂','card index dividers':'🗂️',
+    'calendar':'📅','tear-off calendar':'📆','spiral notepad':'🗒️','ledger':'📒','notebook':'📓',
+    'closed book':'📕','open book':'📖','green book':'📗','blue book':'📘','orange book':'📙',
+    'books':'📚','bookmark tabs':'📑','bookmark':'🔖','label':'🏷️','newspaper':'📰','rolled-up newspaper':'🗞️',
+
+    // ---------- COMUNICACIÓN (12) ----------
+    'envelope':'✉️','incoming envelope':'📨','e-mail':'📧','mailbox closed':'📪','mailbox open':'📫',
+    'package':'📦','postbox':'📮','telephone':'☎️','telephone receiver':'📞','pager':'📟',
+    'fax machine':'📠','mobile phone':'📱',
+
+    // ---------- TECNOLOGÍA (20) ----------
+    'battery full':'🔋','battery low':'🪫','electric plug':'🔌','light bulb':'💡','flashlight':'🔦',
+    'candle':'🕯️','wastebasket':'🗑️','camera':'📷','camera with flash':'📸','video camera':'📹',
+    'movie camera':'🎥','tv':'📺','computer':'💻','desktop computer':'🖥️','printer':'🖨️',
+    'keyboard':'⌨️','computer mouse':'🖱️','trackball':'🖲️','floppy disk':'💾','optical disk':'💿',
+    'dvd':'📀','abacus':'🧮','satellite antenna':'📡','radio':'📻',
+
+    // ---------- HERRAMIENTAS (16) ----------
+    'hammer':'🔨','axe':'🪓','pick':'⛏️','hammer and wrench':'🛠️','dagger':'🗡️','crossed swords':'⚔️',
+    'shield':'🛡️','wrench':'🔧','screwdriver':'🪛','nut and bolt':'🔩','gear':'⚙️','clamp':'🗜️',
+    'balance scale':'⚖️','link':'🔗','chains':'⛓️','hook':'🪝','toolbox':'🧰','magnet':'🧲','ladder':'🪜',
+
+    // ---------- CIENCIA Y MEDICINA (16) ----------
+    'alembic':'⚗️','test tube':'🧪','petri dish':'🧫','dna':'🧬','microscope':'🔬','telescope':'🔭',
+    'syringe':'💉','pill':'💊','adhesive bandage':'🩹','stethoscope':'🩺','x-ray':'🩻','dna double helix':'🧬',
+    'atom symbol':'⚛️','microbe':'🦠','drop of blood':'🩸','crutch':'🩼',
+
+    // ---------- SEGURIDAD (10) ----------
+    'key':'🔑','old key':'🗝️','lock':'🔒','unlocked':'🔓','closed lock with key':'🔐',
+    'mega':'📣','loudspeaker':'📢','speaker high volume':'🔊','mute':'🔇','police car light':'🚨',
+
+    // ---------- MÚSICA (14) ----------
+    'musical note':'🎵','musical notes':'🎶','microphone':'🎤','headphone':'🎧','saxophone':'🎷',
+    'guitar':'🎸','musical keyboard':'🎹','trumpet':'🎺','violin':'🎻','banjo':'🪕','drum':'🥁',
+    'studio microphone':'🎙️','level slider':'🎚️','control knobs':'🎛️',
+
+    // ---------- PREMIOS Y SÍMBOLOS DE ESTATUS (12) ----------
+    'trophy':'🏆','sports medal':'🏅','first place medal':'🥇','second place medal':'🥈',
+    'third place medal':'🥉','crown':'👑','ring':'💍','graduate':'🎓','graduation cap':'🎓',
+    'military helmet':'🪖','top hat':'🎩','billed cap':'🧢','rescue workers helmet':'⛑️',
+
+    // ---------- ROPA Y ACCESORIOS (20) ----------
+    'glasses':'👓','sunglasses':'🕶️','goggles':'🥽','lab coat':'🥼','safety vest':'🦺','necktie':'👔',
+    't-shirt':'👕','jeans':'👖','scarf':'🧣','gloves':'🧤','coat':'🧥','socks':'🧦','dress':'👗',
+    'kimono':'👘','sari':'🥻','shorts':'🩳','bikini':'👙','thong sandal':'🩴','billed cap':'🧢',
+    'purse':'👛','handbag':'👜','clutch bag':'👝','shopping bags':'🛍️','backpack':'🎒','luggage':'🧳',
+
+    // ---------- RELIGIÓN Y SÍMBOLOS RELIGIOSOS (8) ----------
+    'church':'⛪','mosque':'🕌','synagogue':'🕍','kaaba':'🕋','om':'🕉️','star of david':'✡️',
+    'wheel of dharma':'☸️','yin yang':'☯️','peace symbol':'☮️','menorah':'🕎',
+
+    // ---------- BANDERAS SIMPLES (12) ----------
+    'white flag':'🏳️','black flag':'🏴','chequered flag':'🏁','triangular flag':'🚩',
+    'crossed flags':'🎌','rainbow flag':'🏳️‍🌈','pirate flag':'🏴‍☠️','transgender flag':'🏳️‍⚧️',
+
+    // ---------- SÍMBOLOS ZODIACALES (12) ----------
+    'Aries':'♈','Taurus':'♉','Gemini':'♊','Cancer':'♋','Leo':'♌','Virgo':'♍','Libra':'♎',
+    'Scorpio':'♏','Sagittarius':'♐','Capricorn':'♑','Aquarius':'♒','Pisces':'♓',
+
+    // ---------- DADOS, CARTAS Y JUEGOS DE AZAR (8) ----------
+    'game die':'🎲','mahjong red dragon':'🀄','flower playing cards':'🎴','black joker':'🃏',
+    'slot machine':'🎰','crystal ball':'🔮','pool 8 ball':'🎱','dart':'🎯',
+
+    // ---------- FRASES Y CONCEPTOS (10) ----------
+    'speech balloon':'💬','thought balloon':'💭','anger bubble':'🗯️','left speech bubble':'🗨️',
+    'eye in speech bubble':'👁️‍🗨️','hundred points':'💯','copyright':'©️','registered':'®️',
+    'trade mark':'™️','information':'ℹ️',
+
+    // ---------- FLECHAS (16) ----------
+    'right arrow':'➡️','left arrow':'⬅️','up arrow':'⬆️','down arrow':'⬇️','up-right arrow':'↗️',
+    'down-right arrow':'↘️','down-left arrow':'↙️','up-left arrow':'↖️','left-right arrow':'↔️',
+    'up-down arrow':'↕️','counterclockwise arrows':'🔄','clockwise vertical arrows':'🔃',
+    'right arrow curving left':'↩️','left arrow curving right':'↪️','repeat':'🔁','shuffle':'🔀',
+
+    // ---------- MISCELÁNEOS (10) ----------
+    'sparkle':'❇️','eight spoked asterisk':'✳️','eight pointed star':'✴️','glowing star':'🌟',
+    'sparkles':'✨','dizzy':'💫','star':'⭐','star of david':'✡️','atom symbol':'⚛️',
+    'om symbol':'🕉️'
+  };
+
+  const byEmoji = {};
+  for (const [name, emoji] of Object.entries(byName)){
+    if (!byEmoji[emoji]) byEmoji[emoji] = name;
+  }
+
+  const names = Object.keys(byName);
+
+  return { byName, byEmoji, names };
+})();
+
+/* ==========================================================
+   PARTE 9 — MERIDAENGINE (motor central)
+   Memoria persistente cross-chat, aprendizaje, intenciones,
+   matemáticas, tiempo, recordatorios, lectura web, imágenes.
+   ========================================================== */
+class MeridaEngine{
+  constructor(db, scheduler){
+    this.db = db;
+    this.scheduler = scheduler;
+    this.retriever = new Retriever(KNOWLEDGE);
+    this.rotator = new TemplateRotator();
+    this.games = new Games(this);
+
+    // Diccionario para corrector ortográfico
+    const dict = new Set();
+    for (const d of KNOWLEDGE){
+      for (const w of tokenize(d.title)) dict.add(w);
+      for (const w of tokenize(d.body)) dict.add(w);
+      for (const t of (d.tags || [])) for (const w of tokenize(t)) dict.add(w);
+    }
+    for (const k of Object.keys(COMMON_TYPOS)) dict.add(k);
+    for (const v of Object.values(COMMON_TYPOS)) for (const w of tokenize(v)) dict.add(w);
+    this.spell = new SpellCorrector([...dict]);
+
+    // Preferencias
+    this.langPref = 'auto';
+    this.detailPref = 'auto';
+    this.tonePref = 'neutral';
+    this.onlineAllowed = true;
+    this.crossChatEnabled = true;
+    this.learnEnabled = true;
+    this.userName = '';
+  }
+
+  async loadPrefs(){
+    const p = await this.db.getAllPrefs();
+    this.langPref = p.lang || 'auto';
+    this.detailPref = p.detail || 'auto';
+    this.tonePref = p.tone || 'neutral';
+    this.onlineAllowed = p.online !== false;
+    this.crossChatEnabled = p.crossChat !== false;
+    this.learnEnabled = p.learn !== false;
+    this.userName = p.userName || '';
+  }
+
+  _pack(text, meta = {}){
+    const final = this._format(text);
+    this.rotator.registerOutput(final);
+    return { text: final, meta };
+  }
+
+  _format(text, {forceLong = false} = {}){
+    if (this.detailPref === 'short' && text.length > 450 && !forceLong){
+      const firstPara = text.split('\n\n')[0];
+      if (firstPara.length < text.length) return firstPara + '\n\n*(Puedes pedirme más detalle si lo necesitas)*';
+    }
+    return text;
+  }
+
+  findEmojiByName(name){
+    const n = normalize(name);
+    if (!n) return null;
+    for (const [key, val] of Object.entries(EMOJIS.byName)){
+      if (normalize(key) === n) return { name: key, emoji: val };
+    }
+    const matches = Object.entries(EMOJIS.byName).filter(([key]) => normalize(key).includes(n));
+    if (matches.length) return { name: matches[0][0], emoji: matches[0][1], multiple: matches.length > 1 };
+    return null;
+  }
+
+  findEmojiName(emoji){ return EMOJIS.byEmoji[emoji] || null; }
+
+  async _askNotificationPermission(){
+    try {
+      if (window.Notification && Notification.permission === 'default'){
+        await Notification.requestPermission();
+      }
+    } catch (_) {}
+  }
+
+  async _crossChatContext(query, excludeChatId){
+    if (!this.crossChatEnabled) return [];
+    const all = await this.db.getAllMessages();
+    const qTokens = new Set(tokenize(query));
+    if (!qTokens.size) return [];
+    const scored = all
+      .filter(m => m.chatId !== excludeChatId && m.role === 'user' && m.content.length > 15)
+      .map(m => {
+        const tokens = new Set(tokenize(m.content));
+        let overlap = 0;
+        for (const t of tokens) if (qTokens.has(t)) overlap++;
+        return { msg: m, score: overlap / Math.max(tokens.size, 1) };
+      })
+      .filter(x => x.score > 0.25)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    return scored.map(s => s.msg.content);
+  }
+
+  async _getFactsSummary(){
+    const facts = await this.db.getFacts();
+    const byKey = {};
+    for (const f of facts){
+      if (!byKey[f.key]) byKey[f.key] = [];
+      byKey[f.key].push(f.value);
+    }
+    return byKey;
+  }
+
+  async _learn(input, reply){
+    if (!this.learnEnabled) return;
+    try {
+      let m = input.match(/\bme llamo\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,20})/i)
+            || input.match(/\bmi nombre es\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,20})/i)
+            || input.match(/\bsoy\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,20})(?=\s|,|\.|$)/);
+      if (m && !/^(un|una|el|la|de|en|muy|tan|más|mas)$/i.test(m[1])){
+        this.userName = m[1];
+        await this.db.addFact('name', m[1], 'auto');
+        await this.db.setPref('userName', m[1]);
+      }
+      m = input.match(/\bme gusta(?:n)?\s+(.{3,80}?)(?:\.|,|$)/i);
+      if (m) await this.db.addFact('likes', m[1].trim(), 'auto');
+      m = input.match(/\bno me gusta(?:n)?\s+(.{3,80}?)(?:\.|,|$)/i);
+      if (m) await this.db.addFact('dislikes', m[1].trim(), 'auto');
+      m = input.match(/\btengo\s+(\d{1,3})\s+años/i);
+      if (m) await this.db.addFact('age', m[1], 'auto');
+      m = input.match(/\bvivo en\s+(.{3,60}?)(?:\.|,|$)/i);
+      if (m) await this.db.addFact('location', m[1].trim(), 'auto');
+      if (reply && reply.meta && (reply.meta.source === 'wikipedia' || reply.meta.source === 'web-read') && input.length > 15){
+        await this.db.addLearned(input, reply.text, reply.meta.source);
+      }
+    } catch (_) {}
+  }
+
+  async _fetchWikipediaSummary(query, lang = 'es'){
+    try {
+      const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.query || !data.query.search || !data.query.search.length) return null;
+      const title = data.query.search[0].title;
+      const sumUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+      const r2 = await fetch(sumUrl);
+      if (!r2.ok) return null;
+      const s = await r2.json();
+      return {
+        title: s.title,
+        extract: s.extract,
+        image: s.thumbnail && s.thumbnail.source ? s.thumbnail.source : null,
+        url: s.content_urls && s.content_urls.desktop ? s.content_urls.desktop.page : null
+      };
+    } catch (_) { return null; }
+  }
+
+  async _fetchWikipediaImage(query, lang = 'es'){
+    const w = await this._fetchWikipediaSummary(query, lang);
+    return w ? w.image : null;
+  }
+
+  async _readUrl(url){
+    try {
+      const res = await fetch(url, {mode:'cors'});
+      if (!res.ok) return { error: `No pude acceder al sitio (HTTP ${res.status}).` };
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('script,style,nav,header,footer,aside,form,iframe,noscript').forEach(n => n.remove());
+      const main = doc.querySelector('article,main,[role="main"]') || doc.body;
+      let text = main.textContent || '';
+      text = text.replace(/\s+/g, ' ').trim();
+      if (text.length < 100) return { error: 'El sitio no tiene contenido legible o está bloqueado.' };
+      if (text.length > 100000) text = text.slice(0, 100000);
+      return { url, text, title: doc.title || '' };
+    } catch (_){
+      return { error: 'No pude leer el sitio (probable bloqueo CORS). Prueba con Wikipedia u otro sitio abierto.' };
+    }
+  }
+
+  _summarize(text){
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.length > 25);
+    if (sentences.length <= 5) return text.slice(0, 1500);
+    const freq = {};
+    for (const w of tokenize(text)){
+      if (w.length < 4) continue;
+      freq[w] = (freq[w] || 0) + 1;
+    }
+    const scored = sentences.map((s, i) => {
+      const words = tokenize(s);
+      let score = 0;
+      for (const w of words) score += freq[w] || 0;
+      return { s, score: score / Math.max(words.length, 1), i };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, Math.min(8, Math.ceil(sentences.length * 0.3)));
+    top.sort((a, b) => a.i - b.i);
+    return top.map(x => x.s).join(' ');
+  }
+
+  async respond(input, chatId){
+    const rawInput = String(input).trim();
+    if (!rawInput) return this._pack('¿Puedes escribirlo de nuevo? No recibí nada.');
+
+    // Corrección ortográfica (excepto código y URLs)
+    let corrected = rawInput;
+    if (!/```/.test(rawInput) && !/https?:\/\//.test(rawInput)){
+      corrected = this.spell.correct(rawInput);
+    }
+
+    const lang = this.langPref === 'auto' ? detectLang(corrected) : this.langPref;
+    const sent = sentiment(corrected);
+
+    // 1) JUEGO ACTIVO (con escape si el input es claramente otro comando)
+    if (this.games.active){
+      const isCommand = MathSolver.isMathQuery(corrected)
+        || /https?:\/\//.test(corrected)
+        || /\b(recu[eé]rdame|av[ií]same|notif)/i.test(corrected);
+      if (isCommand){
+        this.games.active = null;
+      } else {
+        const g = await this.games.handle(corrected);
+        if (g) return this._pack(g, {source:'game'});
+      }
+    }
+
+    // 2) INICIAR JUEGO
+    if (/\b(juega|juguemos|jugar|game|play)\b/i.test(corrected)){
+      if (/trivia/i.test(corrected)) return this._pack(this.games.start('trivia'), {source:'game'});
+      if (/adivina.*n[uú]mero|guess.*number/i.test(corrected)) return this._pack(this.games.start('guess'), {source:'game'});
+      if (/piedra|papel|tijera|rock.*paper/i.test(corrected)) return this._pack(this.games.start('rps'), {source:'game'});
+      if (/adivina.*tema|guess.*topic/i.test(corrected)) return this._pack(this.games.start('adivina'), {source:'game'});
+      if (/ahorcado|hangman/i.test(corrected)) return this._pack(this.games.start('hangman'), {source:'game'});
+      if (/20 preguntas|20 questions/i.test(corrected)) return this._pack(this.games.start('20q'), {source:'game'});
+      if (/cadena.*palabra|word.*chain/i.test(corrected)) return this._pack(this.games.start('wordchain'), {source:'game'});
+      return this._pack(this.games.start(''), {source:'game'});
+    }
+
+    // 3) MATEMÁTICAS
+    if (MathSolver.isMathQuery(corrected)){
+      try {
+        const eq = MathSolver.solveLinear(corrected);
+        if (eq){
+          const sign = eq.b >= 0 ? '+' : '−';
+          return this._pack(`**Ecuación resuelta**\n\n${eq.a}x ${sign} ${Math.abs(eq.b)} = ${eq.c}\n\n**x = ${eq.x}**`, {source:'math'});
+        }
+        const expr = MathSolver.extractExpression(corrected);
+        const result = MathSolver.solve(expr);
+        return this._pack(`**Resultado**\n\n\`${expr.trim()}\` = **${result}**`, {source:'math'});
+      } catch (e){
+        return this._pack(`No pude resolver esa expresión. Asegúrate de usar números y operadores válidos (+, −, ×, ÷, ^, paréntesis).`, {source:'math-error'});
+      }
+    }
+
+    // 4) CONVERSIÓN DE UNIDADES
+    const conv = UnitConverter.tryConvert(corrected);
+    if (conv) return this._pack(`**Conversión**\n\n${conv.value} **${conv.to}**`, {source:'convert'});
+
+    // 5) FECHA / HORA
+    if (/\b(qu[eé]\s*hora|qu[eé]\s*d[ií]a|fecha de hoy|hora es|what time|what day|current date)\b/i.test(corrected)){
+      const now = new Date();
+      const dateStr = now.toLocaleDateString(lang, {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+      const timeStr = now.toLocaleTimeString(lang, {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      return this._pack(`**Fecha y hora actual**\n\n📅 ${dateStr}\n🕐 ${timeStr}`, {source:'time'});
+    }
+
+    // 6) RECORDATORIOS
+    if (/\b(recu[eé]rdame|recordarme|av[ií]same|avisame|notif[ií]came|notificame|remind me|alerta|programa|programar|agenda|agendar)\b/i.test(corrected)){
+      const parsed = TimeParser.parse(corrected);
+      if (parsed && parsed.when > new Date()){
+        await this.scheduler.add(parsed.when, parsed.what, chatId);
+        await this._askNotificationPermission();
+        const desc = TimeParser.describe(parsed.when);
+        return this._pack(`✅ **Recordatorio programado**\n\n⏰ ${desc}\n📌 ${parsed.what}\n\nTe avisaré cuando llegue el momento.`, {source:'reminder'});
+      }
+      return this._pack(`Entendí que quieres un recordatorio pero no capté bien cuándo. Prueba con:\n\n• "Recuérdame en 30 minutos llamar a mamá"\n• "Avísame mañana a las 9 hacer ejercicio"\n• "Recuérdame el lunes a las 15:00 la reunión"`, {source:'reminder-help'});
+    }
+
+    // 7) LISTA DE RECORDATORIOS
+    if (/\b(mis recordatorios|lista.*recordatorios|qu[eé] recordatorios|recordatorios pendientes)\b/i.test(corrected)){
+      const pending = await this.scheduler.listPending();
+      if (!pending.length) return this._pack('No tienes recordatorios pendientes. 😊', {source:'reminders-list'});
+      const lines = pending.map((r, i) => `${i+1}. ⏰ ${new Date(r.when).toLocaleString(lang)} — ${r.message}`);
+      return this._pack(`**Recordatorios pendientes**\n\n${lines.join('\n')}`, {source:'reminders-list'});
+    }
+
+    // 8) EMOJIS
+    if (/\b(emoji|emoticono|emoticon|cara|carita)\b/i.test(corrected)){
+      const emojiMatch = corrected.match(/(\p{Extended_Pictographic}(?:\u200d\p{Extended_Pictographic})*)/u);
+      if (emojiMatch){
+        const name = this.findEmojiName(emojiMatch[1]);
+        if (name) return this._pack(`El emoji ${emojiMatch[1]} se llama oficialmente **${name}**. 🙂`, {source:'emoji'});
+      }
+      const cleanName = corrected.replace(/\b(emoji|emoticono|emoticon|cara|carita|cu[aá]l es|qu[eé] es|se llama|c[oó]mo se llama)\b/gi, '').trim();
+      if (cleanName){
+        const found = this.findEmojiByName(cleanName);
+        if (found){
+          let text = `El emoji **${found.emoji}** se llama oficialmente "${found.name}".`;
+          if (found.multiple) text += ' (Hay varios con nombres similares)';
+          return this._pack(text, {source:'emoji'});
+        }
+      }
+      const sample = EMOJIS.names.slice(0, 5).map(n => `${EMOJIS.byName[n]} ${n}`).join('\n');
+      return this._pack(`Conozco más de ${EMOJIS.names.length} emojis por su nombre oficial. Algunos ejemplos:\n\n${sample}\n\nPregúntame por el nombre de un emoji o por el emoji de un nombre. 😊`, {source:'emoji-help'});
+    }
+
+    // 9) IMAGEN
+    if (/\b(muestra|mu[eé]strame|ens[eé]ñame|dame|show|mostra|montre|zeig)\b.*\b(imagen|foto|picture|image|bild)\b/i.test(corrected)){
+      if (!navigator.onLine) return this._pack('Estoy sin conexión, no puedo buscar imágenes ahora. 📵', {source:'image-offline'});
+      const topic = corrected.replace(/.*\b(imagen|foto|picture|image|bild)\s*(de|of|von|di)?\s*/i, '').trim();
+      if (!topic) return this._pack('¿De qué quieres la imagen?', {source:'image-help'});
+      const img = await this._fetchWikipediaImage(topic, lang);
+      if (img) return this._pack(`Aquí tienes una imagen sobre **${topic}**:`, {source:'image', image: img});
+      return this._pack(`No encontré una imagen clara sobre "${topic}". Prueba con otro término.`, {source:'image-none'});
+    }
+
+    // 10) LEER URL
+    if (/https?:\/\/[^\s]+/.test(corrected)){
+      const urlMatch = corrected.match(/https?:\/\/[^\s]+/);
+      if (!navigator.onLine) return this._pack('Estoy sin conexión, no puedo leer sitios web ahora. 📵', {source:'read-offline'});
+      const result = await this._readUrl(urlMatch[0]);
+      if (result.error) return this._pack(result.error, {source:'read-error'});
+      const summary = this._summarize(result.text);
+      const text = `**${result.title || result.url}**\n\n${summary}\n\n🔗 ${result.url}`;
+      return this._pack(text, {source:'web-read', url: result.url});
+    }
+
+    // 11) SALUDO
+    if (/^(hola|holi|hey|hi|hello|buenas|buenos d[ií]as|buenas tardes|buenas noches|saludos|qu[eé] tal|ol[aá]|bonjour|hallo|ciao|oi)\b/i.test(corrected)){
+      const greet = this.userName ? `¡Hola, ${this.userName}! 😊` : '¡Hola! 😊';
+      const h = new Date().getHours();
+      let timeGreet = h >= 5 && h < 12 ? 'Buenos días. ' : h >= 12 && h < 20 ? 'Buenas tardes. ' : 'Buenas noches. ';
+      return this._pack(`${timeGreet}${greet} ¿En qué puedo ayudarte hoy?`, {source:'greeting'});
+    }
+
+    // 12) DESPEDIDA
+    if (/\b(adi[oó]s|chao|hasta luego|nos vemos|bye|goodbye|see you|tchau|at[eé] logo|au revoir|tsch[uü]ss|arrivederci)\b/i.test(corrected)){
+      return this._pack(`¡Hasta pronto${this.userName ? ', ' + this.userName : ''}! 👋 Que tengas un excelente día.`, {source:'farewell'});
+    }
+
+    // 13) GRACIAS
+    if (/\b(gracias|thanks|thank you|obrigad[oa]|merci|danke|grazie|te agradezco)\b/i.test(corrected) && corrected.length < 50){
+      return this._pack(pick([
+        `¡Con mucho gusto${this.userName ? ', ' + this.userName : ''}! 😊 Si necesitas algo más, aquí estoy.`,
+        '¡Un placer ayudarte! ¿Algo más en lo que pueda colaborar?',
+        '¡De nada! Me alegra haber sido útil. 🙂'
+      ]), {source:'thanks'});
+    }
+
+    // 14) QUIÉN ERES
+    if (/\b(qui[eé]n eres|qu[eé] eres|c[oó]mo te llamas|tu nombre|who are you|what are you)\b/i.test(corrected)){
+      return this._pack(`Soy **Mérida**, tu asistente personal. 🧠\n\nPuedo conversar contigo, explicarte temas de cultura, ciencia, tecnología, Biblia, programación y mucho más. También puedo:\n\n• Leer sitios web y resumirlos\n• Mostrarte imágenes\n• Resolver problemas matemáticos y de programación\n• Ponerte recordatorios y avisarte\n• Jugar contigo\n\nFunciono sin conexión (mis datos base están en tu navegador) y solo consulto internet cuando me lo pides o cuando necesito ampliar información. No te miento: si no sé algo, te lo digo. 😊`, {source:'about'});
+    }
+
+    // 15) MEMORIA SOBRE EL USUARIO
+    if (/\b(qu[eé] sabes de m[ií]|qu[eé] recuerdas|mi memoria|what do you know about me)\b/i.test(corrected)){
+      const facts = await this._getFactsSummary();
+      const lines = [];
+      if (facts.name) lines.push(`• Te llamas **${facts.name[facts.name.length-1]}**`);
+      if (facts.age) lines.push(`• Tienes ${facts.age[facts.age.length-1]} años`);
+      if (facts.location) lines.push(`• Vives en ${facts.location[facts.location.length-1]}`);
+      if (facts.likes) lines.push(`• Te gusta: ${facts.likes.join(', ')}`);
+      if (facts.dislikes) lines.push(`• No te gusta: ${facts.dislikes.join(', ')}`);
+      if (!lines.length) return this._pack('Aún no sé mucho de ti. Cuéntame cosas como tu nombre, dónde vives o qué te gusta, y lo recordaré. 😊', {source:'memory'});
+      return this._pack(`**Esto es lo que recuerdo de ti:**\n\n${lines.join('\n')}\n\n¿Quieres que olvide algo? Puedes decírmelo.`, {source:'memory'});
+    }
+
+    // 16) OLVIDAR
+    if (/\b(olvida|olvidar|borra.*memoria|forget)\b/i.test(corrected) && /\b(memoria|todo|lo que sabes|facts)\b/i.test(corrected)){
+      await this.db.clearFacts();
+      this.userName = '';
+      return this._pack('He olvidado todo lo que sabía sobre ti. Empezamos de nuevo. 🌱', {source:'forget'});
+    }
+
+    // 17) CONTEXTO CROSS-CHAT
+    const crossChat = await this._crossChatContext(corrected, chatId);
+
+    // 18) BÚSQUEDA EN KB (BM25 + fuzzy)
+    const hits = this.retriever.searchFuzzy(corrected, 3);
+    const strong = hits.filter(h => h.score >= 3);
+
+    // 19) Q&A APRENDIDAS
+    const learned = await this.db.getLearned();
+    const learnedMatch = learned.find(l => {
+      const lq = new Set(tokenize(l.question));
+      const iq = tokenize(corrected);
+      let overlap = 0;
+      for (const t of iq) if (lq.has(t)) overlap++;
+      return overlap / Math.max(lq.size, 1) > 0.6;
+    });
+
+    // Prefijo empático si el usuario está mal
+    let prefix = '';
+    if (sent === 'neg'){
+      prefix = pick([
+        'Siento que estés pasando por esto. 🤗 ',
+        'Lamento escuchar eso. Estoy aquí para lo que necesites. ',
+        'Entiendo que pueda ser difícil. Cuéntame más si quieres. '
+      ]);
+    }
+
+    // 20) RESPUESTA DESDE KB
+    if (strong.length){
+      const top = strong[0].doc;
+      const related = strong.slice(1).map(h => h.doc.title);
+      let text = `**${top.title}**\n\n${top.body}`;
+      if (related.length) text += `\n\n*También tengo información sobre: ${related.join(', ')}.*`;
+      if (crossChat.length) text += `\n\n*(Mencionaste antes: "${crossChat[0].slice(0, 80)}…")*`;
+      return this._pack(prefix + text, {source:'kb', hits: strong.map(h => h.doc.title)});
+    }
+
+    // 21) RESPUESTA APRENDIDA
+    if (learnedMatch){
+      return this._pack(`${prefix}Según lo que aprendí antes:\n\n${learnedMatch.answer}`, {source:'learned'});
+    }
+
+    // 22) WIKIPEDIA (si hay conexión)
+    if (navigator.onLine && this.onlineAllowed){
+      const wiki = await this._fetchWikipediaSummary(corrected, lang);
+      if (wiki && wiki.extract){
+        let text = `**${wiki.title}**\n\n${wiki.extract}`;
+        if (wiki.url) text += `\n\n🔗 ${wiki.url}`;
+        return this._pack(prefix + text, {source:'wikipedia', url: wiki.url, image: wiki.image});
+      }
+    }
+
+    // 23) FALLBACK
+    const fallback = pick([
+      `No tengo información sólida sobre eso todavía. ${navigator.onLine ? 'Si me das más contexto o un enlace, lo consulto. También puedo intentar buscarlo en Wikipedia si me lo pides con más detalle.' : 'Estoy sin conexión, así que solo puedo usar lo que sé de memoria.'}`,
+      `No lo sé con certeza y prefiero no inventar. ${navigator.onLine ? 'Puedo buscar en Wikipedia o leer un sitio que me indiques.' : 'Cuando tenga conexión, puedo buscar para ti.'}`,
+      `No encuentro esa información en mi base actual. ${navigator.onLine ? 'Prueba a darme un enlace o reformular la pregunta.' : 'Vuelve a preguntarme cuando tenga conexión.'}`
+    ]);
+    return this._pack(prefix + fallback, {source:'fallback'});
+  }
+}
+
+/* ==========================================================
+   PARTE 10 — SERVICE WORKER EMBEBIDO (offline real)
+   Va justo después de la clase MeridaEngine.
+   ========================================================== */
+(function registerServiceWorker(){
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+
+  const swSource = `
+    const CACHE = 'merida-v1';
+    const PRECACHE = [self.location.origin + self.location.pathname];
+
+    self.addEventListener('install', (e) => {
+      self.skipWaiting();
+      e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE).catch(() => {})));
+    });
+
+    self.addEventListener('activate', (e) => {
+      e.waitUntil(
+        caches.keys().then((keys) =>
+          Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+      );
+    });
+
+    self.addEventListener('fetch', (e) => {
+      const req = e.request;
+      if (req.method !== 'GET') return;
+      const url = new URL(req.url);
+      const sameOrigin = url.origin === self.location.origin;
+
+      if (req.mode === 'navigate') {
+        e.respondWith(
+          caches.match(PRECACHE[0]).then((hit) => hit || fetch(req).then((res) => {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put(PRECACHE[0], clone)).catch(() => {});
+            return res;
+          }).catch(() => caches.match(PRECACHE[0])))
+        );
+        return;
+      }
+
+      if (sameOrigin) {
+        e.respondWith(
+          caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, clone)).catch(() => {});
+            return res;
+          }).catch(() => new Response('', { status: 504 })))
+        );
+        return;
+      }
+
+      e.respondWith(
+        fetch(req).then((res) => {
+          if (res.ok && (req.destination === 'image' || url.hostname.includes('wikipedia.org'))) {
+            const clone = res.clone();
+            caches.open(CACHE + '-ext').then((c) => c.put(req, clone)).catch(() => {});
+          }
+          return res;
+        }).catch(() => caches.match(req))
+      );
+    });
+
+    self.addEventListener('notificationclick', (e) => {
+      e.notification.close();
+      e.waitUntil(
+        self.clients.matchAll({ type: 'window' }).then((list) => {
+          for (const c of list) { if ('focus' in c) return c.focus(); }
+          if (self.clients.openWindow) return self.clients.openWindow('./');
+        })
+      );
+    });
+  `;
+
+  const blob = new Blob([swSource], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+
+  navigator.serviceWorker.register(swUrl, { scope: './' })
+    .then((reg) => console.log('✅ Mérida SW registrado:', reg.scope))
+    .catch((err) => {
+      console.warn('⚠️ SW no registrado (offline reducido):', err.message);
+      URL.revokeObjectURL(swUrl);
+    });
+})();
+
+/* ==========================================================
+   PARTE 11 — UI COMPLETA E INICIALIZACIÓN
+   (Parche 1: renderMarkdown corregido — ya aplicado)
+   (Parche 4: persistencia de almacenamiento — ya aplicado)
+   ========================================================== */
+(async () => {
+  'use strict';
+
+  // Referencias DOM
+  const chatList = $('#chatList');
+  const messagesEl = $('#messages');
+  const inputEl = $('#input');
+  const inputForm = $('#inputForm');
+  const sendBtn = $('#sendBtn');
+  const statusBar = $('#statusBar');
+  const chatTitleEl = $('#chatTitle');
+  const sidebarEl = $('#sidebar');
+  const settingsPanel = $('#settingsPanel');
+
+  // Estado
+  let db, scheduler, engine;
+  let currentChatId = null;
+  let allChats = [];
+  let searchFilter = '';
+  let searchInChatFilter = '';
+
+  // ---------- INIT ----------
+  db = new DB();
+  await db.open();
+
+  // Parche 4: solicitar almacenamiento persistente
+  if (navigator.storage && navigator.storage.persist){
+    try {
+      const already = await navigator.storage.persisted();
+      if (!already){
+        const granted = await navigator.storage.persist();
+        console.log(granted ? '✅ Almacenamiento persistente concedido' : '⚠️ Almacenamiento best-effort');
+      }
+    } catch (_){}
+  }
+
+  scheduler = new Scheduler(db);
+  engine = new MeridaEngine(db, scheduler);
+  await engine.loadPrefs();
+
+  // ---------- RECORDATORIOS ----------
+  window.addEventListener('merida-reminder', e => {
+    const r = e.detail;
+    if (r.chatId === currentChatId){
+      appendMessage('ai', `⏰ **Recordatorio**: ${r.message}`, {source:'reminder-fire'});
+    } else if (r.chatId){
+      db.addMessage(r.chatId, 'ai', `⏰ **Recordatorio**: ${r.message}`, {source:'reminder-fire'});
+    }
+    if (localStorage.getItem('prefSounds') === 'true'){
+      try {
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+        osc.connect(gain); gain.connect(actx.destination);
+        osc.frequency.value = 800;
+        gain.gain.setValueAtTime(0.3, actx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.5);
+        osc.start(); osc.stop(actx.currentTime + 0.5);
+      } catch (_) {}
+    }
+  });
+
+  // ---------- MARKDOWN (Parche 1 — versión corregida) ----------
+  function renderMarkdown(text){
+    let html = escapeHtml(text);
+
+    // 1) Extraer bloques ``` ... ``` ANTES de cualquier otro procesado
+    const codeBlocks = [];
+    html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
+      const idx = codeBlocks.length;
+      codeBlocks.push(`<pre><code>${code}</code><button class="copyCode" type="button">Copiar</button></pre>`);
+      return `\u0000CODE${idx}\u0000`;
+    });
+
+    // 2) Código inline `...`
+    html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+    // 3) Títulos
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+
+    // 4) Negritas y cursivas
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+
+    // 5) Enlaces
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    html = html.replace(/(^|[\s>])(https?:\/\/[^\s<>"]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+
+    // 6) Saltos de línea
+    html = html.replace(/\n/g, '<br>');
+
+    // 7) Restaurar bloques de código
+    html = html.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => codeBlocks[parseInt(i)]);
+
+    return html;
+  }
+
+  // Delegación de copiar código
+  messagesEl.addEventListener('click', (e) => {
+    if (e.target.classList && e.target.classList.contains('copyCode')){
+      const pre = e.target.closest('pre');
+      const code = pre && pre.querySelector('code');
+      if (code){
+        navigator.clipboard.writeText(code.textContent).then(() => showToast('Copiado', 'success', 1500));
+      }
+    }
+  });
+
+  // ---------- APPEND MESSAGE ----------
+  function appendMessage(role, content, extra = {}, messageId = null, save = true){
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = role === 'ai' ? '🧠' : (engine.userName ? engine.userName[0].toUpperCase() : '👤');
+    const contentWrap = document.createElement('div');
+    contentWrap.className = 'msgContent';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = renderMarkdown(content);
+    contentWrap.appendChild(bubble);
+    if (extra && extra.image){
+      const img = document.createElement('img');
+      img.src = extra.image;
+      img.alt = 'Imagen relacionada';
+      img.loading = 'lazy';
+      img.onerror = () => img.remove();
+      bubble.appendChild(img);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'msgMeta';
+    const labels = {
+      kb:'📚 Base de conocimiento', wikipedia:'🌐 Wikipedia', 'web-read':'🔗 Web leída',
+      learned:'🧠 Aprendido', memory:'💭 Memoria', game:'🎮 Juego',
+      math:'🧮 Cálculo', convert:'📐 Conversión', time:'🕐 Hora',
+      reminder:'⏰ Recordatorio', 'reminder-fire':'⏰ Recordatorio disparado',
+      fallback:'❓ Sin información', greeting:'👋 Saludo', farewell:'👋 Despedida',
+      thanks:'🙏', about:'ℹ️ Info', forget:'🌱', image:'🖼️ Imagen', emoji:'😊 Emoji'
+    };
+    if (extra && extra.source && labels[extra.source]){
+      const span = document.createElement('span');
+      span.textContent = labels[extra.source];
+      meta.appendChild(span);
+    }
+    if (role === 'ai'){
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = '📋';
+      copyBtn.title = 'Copiar';
+      copyBtn.onclick = () => navigator.clipboard.writeText(content).then(() => showToast('Copiado', 'success', 1500));
+      meta.appendChild(copyBtn);
+    }
+    if (messageId){
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑';
+      delBtn.title = 'Eliminar mensaje';
+      delBtn.onclick = async () => {
+        await db.deleteMessage(messageId);
+        div.remove();
+        showToast('Mensaje eliminado', 'success', 1500);
+      };
+      meta.appendChild(delBtn);
+    }
+    contentWrap.appendChild(meta);
+    div.appendChild(avatar);
+    div.appendChild(contentWrap);
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    if (save && currentChatId){
+      db.addMessage(currentChatId, role, content, extra).then(saved => {
+        if (saved && saved.id){
+          const delBtn = document.createElement('button');
+          delBtn.textContent = '🗑';
+          delBtn.title = 'Eliminar mensaje';
+          delBtn.onclick = async () => {
+            await db.deleteMessage(saved.id);
+            div.remove();
+          };
+          meta.appendChild(delBtn);
+        }
+      });
+    }
+    return div;
+  }
+
+  // ---------- CHAT LIST ----------
+  async function renderChatList(){
+    allChats = await db.getChats();
+    chatList.innerHTML = '';
+    const filtered = searchFilter
+      ? allChats.filter(c => c.title.toLowerCase().includes(searchFilter.toLowerCase()))
+      : allChats;
+    if (!filtered.length){
+      chatList.innerHTML = `<li class="empty">${searchFilter ? 'Sin resultados' : 'Aún no hay conversaciones'}</li>`;
+      return;
+    }
+    for (const chat of filtered){
+      const li = document.createElement('li');
+      li.dataset.id = chat.id;
+      if (chat.id === currentChatId) li.classList.add('active');
+      const dateStr = new Date(chat.updatedAt).toLocaleDateString('es', {day:'numeric', month:'short'});
+      li.innerHTML = `
+        <div style="flex:1;min-width:0">
+          <div class="title">${escapeHtml(chat.title)}</div>
+          <div class="meta">${dateStr}</div>
+        </div>
+        <div class="actions">
+          <button class="rename" title="Renombrar" type="button">✏</button>
+          <button class="del" title="Eliminar" type="button">✕</button>
+        </div>`;
+      li.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('del')){ e.stopPropagation(); await deleteChatById(chat.id); return; }
+        if (e.target.classList.contains('rename')){ e.stopPropagation(); await renameChat(chat.id); return; }
+        await openChat(chat.id);
+        if (window.innerWidth < 760) sidebarEl.classList.remove('open');
+      });
+      chatList.appendChild(li);
+    }
+  }
+
+  async function deleteChatById(id){
+    const chat = await db.getChat(id);
+    if (!chat) return;
+    const ok = await confirmDialog('Eliminar conversación', `¿Eliminar "${chat.title}"? Esta acción no se puede deshacer.`);
+    if (!ok) return;
+    await db.deleteChat(id);
+    if (currentChatId === id){
+      currentChatId = null;
+      messagesEl.innerHTML = '';
+      chatTitleEl.textContent = 'Nueva conversación';
+    }
+    await renderChatList();
+    showToast('Conversación eliminada', 'success');
+  }
+
+  async function renameChat(id){
+    const chat = await db.getChat(id);
+    if (!chat) return;
+    const newTitle = prompt('Nuevo título:', chat.title);
+    if (!newTitle || !newTitle.trim()) return;
+    await db.updateChat(id, {title: newTitle.trim()});
+    await renderChatList();
+    if (currentChatId === id) chatTitleEl.textContent = newTitle.trim();
+  }
+
+  // ---------- OPEN / NEW CHAT ----------
+  async function openChat(id){
+    currentChatId = id;
+    const chat = await db.getChat(id);
+    if (!chat) return;
+    chatTitleEl.textContent = chat.title;
+    messagesEl.innerHTML = '';
+    const msgs = await db.getMessages(id);
+    for (const m of msgs) appendMessage(m.role, m.content, m.extra || {}, m.id, false);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    await renderChatList();
+  }
+
+  async function newChat(){
+    const chat = await db.createChat('Nueva conversación');
+    currentChatId = chat.id;
+    messagesEl.innerHTML = '';
+    chatTitleEl.textContent = chat.title;
+    appendMessage('ai', `👋 ¡Hola${engine.userName ? ', ' + engine.userName : ''}! Soy **Mérida**. ¿En qué te puedo ayudar hoy?\n\nPuedo conversar, explicarte temas, resolver matemáticas, programar, leer webs, mostrarte imágenes, ponerte recordatorios o jugar contigo. 😊`, {source:'greeting'});
+    await renderChatList();
+    if (window.innerWidth < 760) sidebarEl.classList.remove('open');
+  }
+
+  // ---------- SEND ----------
+  async function sendMessage(){
+    const text = inputEl.value.trim();
+    if (!text) return;
+    if (!currentChatId){
+      const c = await db.createChat('Nueva conversación');
+      currentChatId = c.id;
+      chatTitleEl.textContent = c.title;
+    }
+    appendMessage('user', text);
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+    statusBar.textContent = 'Mérida está pensando…';
+    try {
+      const reply = await engine.respond(text, currentChatId);
+      appendMessage('ai', reply.text, reply.meta || {});
+      const chat = await db.getChat(currentChatId);
+      if (chat && chat.title === 'Nueva conversación'){
+        const msgs = await db.getMessages(currentChatId);
+        const first = msgs.find(m => m.role === 'user');
+        if (first){
+          const newTitle = first.content.slice(0, 40) + (first.content.length > 40 ? '…' : '');
+          await db.updateChat(currentChatId, {title: newTitle});
+          chatTitleEl.textContent = newTitle;
+        }
+      }
+      await engine._learn(text, reply);
+      await renderChatList();
+    } catch (e){
+      console.error(e);
+      appendMessage('ai', '😥 Uy, algo falló al procesar tu mensaje. ¿Puedes intentarlo de nuevo?');
+    } finally {
+      sendBtn.disabled = false;
+      statusBar.textContent = '';
+      inputEl.focus();
+    }
+  }
+
+  // ---------- EVENTOS ----------
+  inputForm.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 200) + 'px';
+  });
+
+  $('#newChat').addEventListener('click', newChat);
+  $('#menuBtn').addEventListener('click', () => sidebarEl.classList.toggle('open'));
+  $('#deleteChatBtn').addEventListener('click', async () => { if (currentChatId) await deleteChatById(currentChatId); });
+
+  $('#exportChatBtn').addEventListener('click', async () => {
+    if (!currentChatId) return;
+    const chat = await db.getChat(currentChatId);
+    const msgs = await db.getMessages(currentChatId);
+    downloadJSON({chat, messages: msgs}, `merida-chat-${chat.title.replace(/[^a-z0-9]/gi, '_').slice(0, 30)}.json`);
+  });
+  $('#exportAll').addEventListener('click', async () => {
+    const chats = await db.getChats();
+    const all = [];
+    for (const c of chats){
+      const msgs = await db.getMessages(c.id);
+      all.push({chat: c, messages: msgs});
+    }
+    downloadJSON({exportedAt: new Date().toISOString(), chats: all}, `merida-export-${Date.now()}.json`);
+  });
+  $('#importBtn').addEventListener('click', () => $('#importFile').click());
+  $('#importFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (data.chats){
+        for (const c of data.chats){
+          const nc = await db.createChat((c.chat.title || 'Importado') + ' (importado)');
+          for (const m of c.messages) await db.addMessage(nc.id, m.role, m.content, m.extra);
+        }
+      } else if (data.chat && data.messages){
+        const nc = await db.createChat((data.chat.title || 'Importado') + ' (importado)');
+        for (const m of data.messages) await db.addMessage(nc.id, m.role, m.content, m.extra);
+      }
+      await renderChatList();
+      showToast('Conversaciones importadas', 'success');
+    } catch (err){
+      showToast('Archivo inválido', 'error');
+    }
+    e.target.value = '';
+  });
+  $('#clearAll').addEventListener('click', async () => {
+    const ok = await confirmDialog('Borrar todo', '¿Eliminar TODAS las conversaciones y mensajes? Esta acción no se puede deshacer.');
+    if (!ok) return;
+    await db.deleteAllChats();
+    currentChatId = null;
+    messagesEl.innerHTML = '';
+    chatTitleEl.textContent = 'Nueva conversación';
+    await renderChatList();
+    showToast('Todo eliminado', 'success');
+  });
+  $('#searchBox').addEventListener('input', (e) => { searchFilter = e.target.value; renderChatList(); });
+
+  $('#searchChatBtn').addEventListener('click', () => {
+    const el = $('#searchInChat');
+    el.classList.toggle('show');
+    if (el.classList.contains('show')) $('#searchInChatInput').focus();
+    else { $('#searchInChatInput').value = ''; searchInChatFilter = ''; applyChatFilter(); }
+  });
+  $('#searchInChatInput').addEventListener('input', (e) => {
+    searchInChatFilter = e.target.value.toLowerCase();
+    applyChatFilter();
+  });
+  function applyChatFilter(){
+    messagesEl.querySelectorAll('.msg').forEach(m => {
+      if (!searchInChatFilter){ m.style.display = ''; return; }
+      m.style.display = m.textContent.toLowerCase().includes(searchInChatFilter) ? '' : 'none';
+    });
+  }
+
+  // Scroll bottom
+  const scrollBtn = $('#scrollBottom');
+  messagesEl.addEventListener('scroll', () => {
+    const nearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 100;
+    scrollBtn.classList.toggle('show', !nearBottom);
+  });
+  scrollBtn.addEventListener('click', () => messagesEl.scrollTop = messagesEl.scrollHeight);
+
+  // Settings
+  $('#settingsBtn').addEventListener('click', openSettings);
+  $('#settingsClose').addEventListener('click', () => settingsPanel.classList.remove('open'));
+  async function openSettings(){
+    const prefs = await db.getAllPrefs();
+    $('#prefName').value = prefs.userName || '';
+    $('#prefLang').value = prefs.lang || 'auto';
+    $('#prefDetail').value = prefs.detail || 'auto';
+    $('#prefTone').value = prefs.tone || 'neutral';
+    $('#prefNotif').checked = window.Notification && Notification.permission === 'granted';
+    $('#prefSounds').checked = prefs.sounds === true;
+    $('#prefCrossChat').checked = prefs.crossChat !== false;
+    $('#prefLearn').checked = prefs.learn !== false;
+    $('#prefOnline').checked = prefs.online !== false;
+    settingsPanel.classList.add('open');
+  }
+  $('#savePrefs').addEventListener('click', async () => {
+    await db.setPref('userName', $('#prefName').value.trim());
+    await db.setPref('lang', $('#prefLang').value);
+    await db.setPref('detail', $('#prefDetail').value);
+    await db.setPref('tone', $('#prefTone').value);
+    await db.setPref('sounds', $('#prefSounds').checked);
+    await db.setPref('crossChat', $('#prefCrossChat').checked);
+    await db.setPref('learn', $('#prefLearn').checked);
+    await db.setPref('online', $('#prefOnline').checked);
+    engine.userName = $('#prefName').value.trim();
+    engine.langPref = $('#prefLang').value;
+    engine.detailPref = $('#prefDetail').value;
+    engine.tonePref = $('#prefTone').value;
+    engine.onlineAllowed = $('#prefOnline').checked;
+    engine.crossChatEnabled = $('#prefCrossChat').checked;
+    engine.learnEnabled = $('#prefLearn').checked;
+    localStorage.setItem('prefSounds', $('#prefSounds').checked);
+    if ($('#prefNotif').checked && window.Notification && Notification.permission === 'default'){
+      await Notification.requestPermission();
+    }
+    settingsPanel.classList.remove('open');
+    showToast('Ajustes guardados', 'success');
+  });
+  $('#testNotif').addEventListener('click', async () => {
+    if (!('Notification' in window)){ showToast('Este navegador no soporta notificaciones', 'error'); return; }
+    if (Notification.permission === 'default') await Notification.requestPermission();
+    if (Notification.permission === 'granted'){
+      new Notification('Mérida', {body: '¡Las notificaciones funcionan! 🎉'});
+    } else {
+      showToast('Permiso de notificaciones denegado', 'error');
+    }
+  });
+  $('#clearFacts').addEventListener('click', async () => {
+    const ok = await confirmDialog('Olvidar datos', '¿Eliminar todo lo aprendido sobre ti?');
+    if (!ok) return;
+    await db.clearFacts();
+    engine.userName = '';
+    showToast('Memoria sobre ti borrada', 'success');
+  });
+
+  function downloadJSON(obj, filename){
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Online/offline
+  function updateOnline(){ $('#onlineDot').classList.toggle('off', !navigator.onLine); }
+  window.addEventListener('online', updateOnline);
+  window.addEventListener('offline', updateOnline);
+  updateOnline();
+
+  // Exponer helpers
+  window.showToast = showToast;
+
+  // ---------- ARRANQUE ----------
+  await renderChatList();
+  if (allChats.length) await openChat(allChats[0].id);
+  else await newChat();
+  inputEl.focus();
+
+  // Exponer para debugging
+  window.Merida = {db, scheduler, engine, showToast, appendMessage};
+})();
+</script>
+</body>
+</html>
+
